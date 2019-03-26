@@ -1,5 +1,6 @@
 import collections
 import os
+import json
 import serial
 import struct
 import threading
@@ -66,7 +67,7 @@ PP_STATUS_HARDWARE_MEMORY        =   10  # hardware memory error
 PP_STATUS_NODE_NUMBER            =   11  # node number error      
 PP_STATUS_GENERAL_COMMUNICATION  =   12  # general communication  
 PP_STATUS_READONLY               =   13  # parameter is readonly  
-PP_STATUS_PC_COMMUNICATION       =   14  # error pc-commmunication
+PP_STATUS_PC_COMMUNICATION       =   14  # error pc-communication
 PP_STATUS_NO_RS232_CONNECTION    =   15  # no rs232 connection    
 PP_STATUS_PC_OUT_OF_MEMORY       =   16  # pc out of memory       
 PP_STATUS_WRITEONLY              =   17  # parameter is writeonly 
@@ -84,7 +85,7 @@ PP_STATUS_HOST_BUFFER_OVERFLOW   =   28  # host buffer overflow
 PP_STATUS_BUFFER_OVERFLOW        =   29  # buffer overflow        
 PP_STATUS_NO_ANSWER_FOUND        =   30  # no answer found        
 PP_STATUS_ERROR_CLOSE_COMM       =   31  # close comm error       
-PP_STATUS_SYNC_ERROR             =   32  # synchronisation error  
+PP_STATUS_SYNC_ERROR             =   32  # synchronization error  
 PP_STATUS_SEND_ERROR             =   33  # send error             
 PP_STATUS_PROTOCOL_ERROR         =   34  # propar protocol error  
 PP_STATUS_MODULE_BUFFER_OVERFLOW =   35  # buffer overflow        
@@ -111,7 +112,7 @@ _PROPAR_MASTERS = {}
 
 
 class instrument(object):
-  """Implements a propar instrument (wrapper around master, with node and additional functions for instrument.py compatibility)."""
+  """Implements a propar instrument (wrapper around master, with address and additional functions)."""
 
   def __init__(self, comport, address=0x80, baudrate=38400):
     """Create our master (or use existing)."""
@@ -124,28 +125,31 @@ class instrument(object):
       self.master = master(comport, baudrate)      
 
   def readParameter(self, dde_nr):
-    """Reads parameter from FlowDDE Nr from this instrument. Compatible with instrument.py."""
+    """Reads parameter from FlowDDE Nr from this instrument."""
     if self.db is None:
       self.db = database()
     try:
       parm = self.db.get_parameter(dde_nr)
-      resp = self.read_parameters([parm])
+    except:
+      raise ValueError('DDE parameter number error!')	  
+    resp = self.read_parameters([parm])	
+    if resp != None:
       for r in resp:
         return r['data']
-    except:
-      raise ValueError('DDE parameter number error!')
+    else:
+      return None
 
   def writeParameter(self, dde_nr, data):
-    """Write parameter by FlowDDE Nr to this instrument. Compatible with instrument.py."""
+    """Write parameter by FlowDDE Nr to this instrument."""
     if self.db is None:
       self.db = database()
     try:
       parm = self.db.get_parameter(dde_nr)
-      parm['data'] = data
-      resp = self.write_parameters([parm])
-      return (resp == PP_STATUS_OK)
     except:
       raise ValueError('DDE parameter number error!')
+    parm['data'] = data
+    resp = self.write_parameters([parm])
+    return (resp == PP_STATUS_OK)
 
   def read_parameters(self, parameters):
     """Read list of parameter objects from this instrument."""
@@ -202,13 +206,7 @@ class master(object):
     """Implements a propar master device. After initializing this can
     be used to read/write parameters of an instrument. When local host functionality
     is used (MBC with flowbus), it is also possible to communicate with other
-    nodes on the network.
-    
-    Planned functionality:
-    1. blocking read/write function  -- Check
-    2. poll parameters on a node    
-       (with a function to read that value)
-    3. async read with callback (also for write if ack is used)        
+    nodes on the network.   
     """
     try:
       # serial propar interface, provides propar message dicts.
@@ -331,7 +329,6 @@ class master(object):
     Matches are made based on:
       * Sequence Number
       * Node Address
-    Messages that are not supported or not pending are discarded (visble with debug_unknown_messages flag).
     After processing a callback may be called if it was provided during sending the request.
     For write the callback can acknowledge the write (with status). Status on failure is also possible.
     For read the callback returns the list of parameters with data. Callback is per request, not per parameter.
@@ -487,7 +484,9 @@ class master(object):
     # Write the message to the propar interface
     self.__propar.write_propar_message(request_message)
     
-    if callback == None:
+    if callback != None:
+      return None
+    else:
       # Wait for processed response to appear magically!
       timeout_time = time.time() + self.__message_timeout    
       response = None
@@ -499,19 +498,18 @@ class master(object):
             self.__processed_requests.remove(resp) 
             break          
       
-      # return response or none (timeout)
+      # no response, timeout
       if response is None:
-        return [{'status': PP_STATUS_TIMEOUT_ANSWER, 'data': None}]
-        #timeout
+        return [{'status': PP_STATUS_TIMEOUT_ANSWER, 'data': None}]        
+      # parameter data
       elif 'parameters' in response and response['parameters'] is not None:
         return response['parameters']
+      # error code status
+      elif len(response['message']['data']) == 1:  # this is an error
+        return [{'status': 0x80 + response['message']['data'][0], 'data': None}]  # return a parameter with error code (+ 0x80)
+      # status code status
       else:
-        if len(response['message']['data']) == 1:  # this is an error
-          return [{'status': response['message']['data'][0], 'data': None}]  # return a paramter with status code for errors
-        else:
-          return [{'status': response['message']['data'][1], 'data': None}]  # return a paramter with status code for errors
-    else:
-      return None
+        return [{'status':        response['message']['data'][1], 'data': None}]  # return a parameter with status code
           
       
   def write_parameters(self, parameters, command=PP_COMMAND_SEND_PARM_WITH_ACK, callback=None):  
@@ -589,8 +587,6 @@ class database(object):
     """This class can be used to read data from the parameters.json database file (generated from FlowDDE.mdb)."""
     #Columns:
     #Parameter	LongName	Name	Available	Group0	Group1	Group2	Process	FBnr	VarType	VarType2	VarLength	Min	Max	Read	Write	Poll	Advanced	Secured	Highly secured	Default	Description
-    import json
-    import os
     if database_path == None:
       database_path = os.path.join(os.path.dirname(__file__), "parameters.json")
     with open(database_path) as f:

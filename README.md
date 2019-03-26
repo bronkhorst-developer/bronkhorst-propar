@@ -1,7 +1,7 @@
 # Bronkhorst Propar
 The Bronkhorst Propar module provides an implementation of a propar master for communication with Bronkhorst (Mass) Flow Meters and Controllers (such as the EL-Flow, ES-Flow, (mini) CORI-FLOW, IQ+FLOW, and others), Pressure Meters and Controllers (EL-PRESS), and others using the default RS232/RS485 interface. 
 
-Using the Bronkhorst Propar module it is possible to directly communicate with a single instrument, or to multiple instrument when they are connected to a FLOW-BUS network. The Bronkhorst Propar module communicates directly with the instruments using Python, and does not require tools such as FlowDDE to be installed. Therefore the module is platform independent and has been tested on both Windows and Linux (the module depends on pyserial for serial communciation and should work on all platforms that support it).
+Using the Bronkhorst Propar module it is possible to directly communicate with a single instrument, or to multiple instruments when they are connected to a FLOW-BUS network. The Bronkhorst Propar module communicates directly with the instruments using Python, and does not require tools such as FlowDDE to be installed. Therefore the module is platform independent and has been tested on both Windows and Linux (the module depends on pyserial for serial communication and should work on all platforms that support it).
 
 ## Parameters
 For a list of common parameters and the associated functionality available on Bronkhorst instruments, please consult document: [9.17.023 - Operating instructions for digital instruments](https://www.bronkhorst.com/getmedia/ad6a26ef-e33f-4424-b375-21d5811e3b04/917023-Manual-operation-instructions-digital-instruments).
@@ -23,7 +23,7 @@ el_flow.setpoint = 16000
 print(el_flow.measure)
 el_flow.setpoint = 0
 
-# All parameters can be read uing the process and parameter numbers,
+# All parameters can be read using the process and parameter numbers,
 # as well as the parameters data type. 
 el_flow.read(1, 1, propar.PP_TYPE_INT16)
 
@@ -85,7 +85,7 @@ nodes = master.get_nodes()
 
 # Read the usertag of all nodes
 for node in nodes:
-  user_tag = master.read(node['node'], 116, 1, propar.PP_TYPE_STRING)
+  user_tag = master.read(node['address'], 113, 6, propar.PP_TYPE_STRING)
   print(user_tag)
 ```
 
@@ -99,13 +99,13 @@ el_flow = propar.instrument('COM1')
 
 # Prepare a list of parameters for a chained read containing: 
 # fmeasure, fsetpoint, temperature, valve output
-parameters = [{'proc_nr':  33, 'parm_nr': 0, 'parm_type': propar.PP_TYPE_FLOAT},
-              {'proc_nr':  33, 'parm_nr': 3, 'parm_type': propar.PP_TYPE_FLOAT},
-              {'proc_nr':  33, 'parm_nr': 7, 'parm_type': propar.PP_TYPE_FLOAT},
-              {'proc_nr': 114, 'parm_nr': 1, 'parm_type': propar.PP_TYPE_INT32}]
+params = [{'proc_nr':  33, 'parm_nr': 0, 'parm_type': propar.PP_TYPE_FLOAT},
+          {'proc_nr':  33, 'parm_nr': 3, 'parm_type': propar.PP_TYPE_FLOAT},
+          {'proc_nr':  33, 'parm_nr': 7, 'parm_type': propar.PP_TYPE_FLOAT},
+          {'proc_nr': 114, 'parm_nr': 1, 'parm_type': propar.PP_TYPE_INT32}]
 
 # Note that this uses the read_parameters function.
-values = el_flow.read_parameters(parameters)
+values = el_flow.read_parameters(params)
 
 # Display the values returned by the read_parameters function. A single 'value' includes 
 # the original fields of the parameters supplied to the request, with the data stored in 
@@ -115,20 +115,20 @@ for value in values:
 
 # For writes the parameter must have the 'data' field set with the value to write when
 # passing it to the write_parameters function.
-parameters = [{'proc_nr': 1, 'parm_nr': 1, 'parm_type': propar.PP_TYPE_INT16, 'data': 32000}]
+params = [{'proc_nr': 1, 'parm_nr': 1, 'parm_type': propar.PP_TYPE_INT16, 'data': 32000}]
 
 # Write parameters returns a propar status code.
-status = el_flow.write_parameters(parameters)
+status = el_flow.write_parameters(params)
 
 # Also, note that when using the master directly the address of the node must be set in the
-# paramter object that is passed to the read_parameters or write_parameters function
-parameters = [{'node': 3, 'proc_nr': 1, 'parm_nr': 1, 'parm_type': propar.PP_TYPE_INT16}]
+# parameter object that is passed to the read_parameters or write_parameters function
+params = [{'node': 3, 'proc_nr': 1, 'parm_nr': 1, 'parm_type': propar.PP_TYPE_INT16}]
 
 # Read from the master directly
-values = el_flow.master.read_parameters(parameters)
+values = el_flow.master.read_parameters(params)
 ```
 
-To easily generate a list of parameters for use with chaining, and the read_parameters and write_parameters functions, the propar database can be used. This component is automatically available on all instrument instances or can be instanciated seperately.
+To easily generate a list of parameters for use with chaining, and the read_parameters and write_parameters functions, the propar database can be used. This component is automatically available on all instrument instances or can be instantiated separately.
 ```python
 # Import the propar module
 import propar
