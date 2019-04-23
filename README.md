@@ -167,3 +167,8 @@ These types are automatically converted to data types in the propar protocol, wh
   * n byte value (string, char array)
 
  When propar module data types are used, the module will perform the required conversion for the specific data type. When using the readParameter and writeParameter functions, the conversion between database parameter types to the customized parameter types is performed automatically (based on the type, and the minimal specified value). 
+ 
+## Changelog
+* 0.3.0 - Improved propar performance, added additional dump mode.
+* 0.2.3 - Fix some errors in the project description and examples.
+* 0.2.1 - Initial public release.

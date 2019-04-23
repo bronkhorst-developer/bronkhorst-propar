@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: bronkhorst_propar
-Version: 0.2.3
+Version: 0.3.0
 Summary: Communicate to Bronkhorst Instruments using the Propar protocol over RS232 or RS485.
 Home-page: UNKNOWN
 Author: Bronkhorst
@@ -175,6 +175,11 @@ Description: # Bronkhorst Propar
           * n byte value (string, char array)
         
          When propar module data types are used, the module will perform the required conversion for the specific data type. When using the readParameter and writeParameter functions, the conversion between database parameter types to the customized parameter types is performed automatically (based on the type, and the minimal specified value). 
+         
+        ## Changelog
+        * 0.3.0 - Improved propar performance, added additional dump mode.
+        * 0.2.3 - Fix some errors in the project description and examples.
+        * 0.2.1 - Initial public release.
 Platform: UNKNOWN
 Classifier: Programming Language :: Python :: 3
 Classifier: License :: OSI Approved :: MIT License

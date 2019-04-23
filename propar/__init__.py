@@ -244,9 +244,9 @@ class master(object):
     """Set the baudrate used for communication."""
     self.__propar.set_baudrate(baudrate)
 
-  def dump(self, enabled=True): 
+  def dump(self, level=1): 
     """Enable printing of all serial data to the console."""
-    self.__propar.dump = enabled
+    self.__propar.dump = level
   
   def stop(self): 
     """Disconnect the comport of the provider."""
@@ -490,7 +490,7 @@ class master(object):
       # Wait for processed response to appear magically!
       timeout_time = time.time() + self.__message_timeout    
       response = None
-      while time.time() <= timeout_time and response == None:      
+      while time.time() <= timeout_time and response == None:
         time.sleep(0.00001)
         for resp in self.__processed_requests:
           if resp['message']['seq'] == request_message['seq']:
@@ -1140,7 +1140,7 @@ class _propar_builder(object):
 class _propar_provider(object):
   """Implements the propar interface for master or slave"""
 
-  def __init__(self, baudrate, comport, debug=False, dump=False):
+  def __init__(self, baudrate, comport, debug=False, dump=0):
     """Implements the propar interface for the propar_slave/master class.
     Creates a serial connection that reads binary propar messages into a queue.
     The connection can also write messages to the serial connection.
@@ -1151,6 +1151,10 @@ class _propar_provider(object):
     propar_message['node']      # Node Address (byte)
     propar_message['len']       # Data Length (byte)
     propar_message['data']      # Data (list of bytes)
+    
+    dump 0 = no dump
+    dump 1 = dump non-propar
+    dump 2 = dump all
     """
     try:
       self.__serial = serial.Serial(comport, baudrate, timeout=0, write_timeout=0, xonxoff=False, rtscts=False, dsrdtr=False)
@@ -1216,19 +1220,15 @@ class _propar_provider(object):
       try:
         if self.paused == False:
           received_byte = self.__serial.read()
-          transmit_msg  = self.__get_transmit_message()        
           if received_byte:
-            self.__process_propar_byte(received_byte)
-            if self.dump:
-              print(received_byte.decode('cp437'), end='')
-          elif transmit_msg:
-            self.__serial.write(transmit_msg)
-          else:
-            time.sleep(0.00002)          
+            was_propar_byte = self.__process_propar_byte(received_byte)
+            if self.dump != 0:
+              if self.dump == 2 or was_propar_byte == False:
+                print(received_byte.decode('cp437'), end='', flush=True)
         else:
           time.sleep(0.002)
       except:
-        time.sleep(0.0035)
+        time.sleep(0.002)
 
 
   def write_propar_message(self, propar_message):
@@ -1298,12 +1298,15 @@ class _propar_provider(object):
     Fully received data will be placed in the __receive_queue as a
     propar message.
     """
-    received_byte = int.from_bytes(received_byte, byteorder='big')
+    was_propar_byte = True
+    received_byte   = int.from_bytes(received_byte, byteorder='big')
 
     if self.RECEIVE_START_1 is self.__receive_state:
       self.__receive_buffer = []
       if received_byte == self.BYTE_DLE:
         self.__receive_state = self.RECEIVE_START_2
+      else:
+        was_propar_byte = False
 
     elif self.RECEIVE_START_2 is self.__receive_state:
       if received_byte == self.BYTE_STX:
@@ -1339,5 +1342,7 @@ class _propar_provider(object):
       self.__receive_state = self.RECEIVE_START_1
       self.__receive_error_count += 1
       if self.debug:
-        print("Receive Error:", self.__receive_error_count, propar_message)
-
+        print("Receive Error:", self.__receive_error_count, propar_message)        
+      was_propar_byte = False
+    
+    return was_propar_byte
