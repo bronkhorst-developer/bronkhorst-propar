@@ -296,7 +296,8 @@ class master(object):
             if r['status'] != PP_STATUS_OK:
               scan_address = 0
         else:
-          print("Received status {:}. Abort.".format(resp[0]['status']))
+          if self.debug:
+            print("Received status {:}. Abort.".format(resp[0]['status']))
           scan_address = 0
 
       if scan_address != 0:
@@ -972,7 +973,6 @@ class _propar_builder(object):
 
     if message_len == 0:
       read_status = PP_STATUS_PROTOCOL_ERROR
-      print('a')
     elif message[0] not in [PP_COMMAND_SEND_PARM_WITH_ACK, PP_COMMAND_SEND_PARM, PP_COMMAND_SEND_PARM_BROADCAST]:
       read_status = PP_STATUS_COMMAND
     else:
