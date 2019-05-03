@@ -277,43 +277,62 @@ class master(object):
       self.__message_timeout = org_timeout
 
     while scan_address != 0 and loop_detected == False:
-      resp = self.read_parameters([{'node': scan_address, 'proc_nr':   0, 'parm_nr': 1, 'parm_type': PP_TYPE_INT8  }, # address of this node
-                                   {'node': scan_address, 'proc_nr':   0, 'parm_nr': 0, 'parm_type': PP_TYPE_STRING}, # id
-                                   {'node': scan_address, 'proc_nr':   0, 'parm_nr': 3, 'parm_type': PP_TYPE_INT8  }])# address of the next node
+      parms = [{'node': scan_address, 'proc_nr':   0, 'parm_nr': 1, 'parm_type': PP_TYPE_INT8  },# address of this node
+               {'node': scan_address, 'proc_nr':   0, 'parm_nr': 0, 'parm_type': PP_TYPE_STRING},# id
+               {'node': scan_address, 'proc_nr':   0, 'parm_nr': 3, 'parm_type': PP_TYPE_INT8  }]# address of the next node
 
-      # get serial number from id string
-      serial_number = resp[1]['data'][3:]
+      resp = self.read_parameters(parms)
 
-      if self.debug:
-        print("This is node {:>2} ({:}). Next node is {:}".format(resp[0]['data'], serial_number, resp[2]['data']))
-
-      # Try to get device type from device
-      dev_resp = self.read_parameters([{'node': scan_address, 'proc_nr': 113, 'parm_nr': 1, 'parm_type': PP_TYPE_STRING}]) # device type?
-      
-      if dev_resp[0]['status'] == PP_STATUS_OK:
-        device_type = dev_resp[0]['data']
-      else:
-        # try to get device type from the database
-        db = database()
-        # extract device id from id string (first byte)
-        device_type = int.from_bytes(bytes(resp[1]['data'][0], encoding='ascii'), byteorder='little')
-        options = db.get_parameter_values(175)
-        for option in options:          
-          if device_type == int(option['value']):
-            device_type = option['description'].split(':')[0]
-
-      # Scan address = next address
-      scan_address = resp[2]['data']
-
-      # Check if the found node is already in the list.
-      # In that case there is a network loop, and we stop looking for nodes.
-      for node in found_nodes:
-        if scan_address == node['address']:
-          loop_detected == True
+      if resp[0]['status'] != PP_STATUS_OK:
+        if resp[0]['status'] == PP_STATUS_MODULE_BUFFER_OVERFLOW:
           if self.debug:
-            print('Found network loop on node {:}'.format(resp[0]['data']))
+            print("Received status PP_STATUS_MODULE_BUFFER_OVERFLOW. Retry reading parameters separately.")
+          # fall back to single requests for each parameter
+          resp = [None, None, None]
+          resp[0] = self.read_parameters([parms[0]])[0]
+          resp[1] = self.read_parameters([parms[1]])[0]
+          resp[2] = self.read_parameters([parms[2]])[0]
+          for r in resp:
+            if r['status'] != PP_STATUS_OK:
+              scan_address = 0
+        else:
+          print("Received status {:}. Abort.".format(resp[0]['status']))
+          scan_address = 0
 
-      found_nodes.append({'address': resp[0]['data'], 'type': device_type, 'serial': serial_number, 'id': resp[1]['data']})        
+      if scan_address != 0:
+        # get serial number from id string
+        serial_number = resp[1]['data'][3:]
+
+        if self.debug:
+          print("This is node {:>2} ({:}). Next node is {:}".format(resp[0]['data'], serial_number, resp[2]['data']))
+
+        # Try to get device type from device
+        dev_resp = self.read_parameters([{'node': scan_address, 'proc_nr': 113, 'parm_nr': 1, 'parm_type': PP_TYPE_STRING}]) # device type?
+        
+        if dev_resp[0]['status'] == PP_STATUS_OK:
+          device_type = dev_resp[0]['data']
+        else:
+          # try to get device type from the database
+          db = database()
+          # extract device id from id string (first byte)
+          device_type = int.from_bytes(bytes(resp[1]['data'][0], encoding='ascii'), byteorder='little')
+          options = db.get_parameter_values(175)
+          for option in options:          
+            if device_type == int(option['value']):
+              device_type = option['description'].split(':')[0]
+
+        # Scan address = next address
+        scan_address = resp[2]['data']
+
+        # Check if the found node is already in the list.
+        # In that case there is a network loop, and we stop looking for nodes.
+        for node in found_nodes:
+          if scan_address == node['address']:
+            loop_detected == True
+            if self.debug:
+              print('Found network loop on node {:}'.format(resp[0]['data']))
+
+        found_nodes.append({'address': resp[0]['data'], 'type': device_type, 'serial': serial_number, 'id': resp[1]['data']})        
 
     return found_nodes
 
