@@ -166,9 +166,10 @@ These types are automatically converted to data types in the propar protocol, wh
   * 4 byte value (float, unsigned long, long)
   * n byte value (string, char array)
 
- When propar module data types are used, the module will perform the required conversion for the specific data type. When using the readParameter and writeParameter functions, the conversion between database parameter types to the customized parameter types is performed automatically (based on the type, and the minimal specified value). 
+ When propar module data types are used, the module will perform the required conversion for the specific data type. When using the readParameter and writeParameter functions, the conversion between database parameter type to the customized parameter type is performed automatically (based on the type, and the minimal specified value). 
  
 ## Changelog
+* 0.3.3 - Fixed issue with matching requests to responses in master. Improved compatibility for get_nodes.
 * 0.3.2 - Changed debug message to only show when flag is set.
 * 0.3.1 - Compatibility improved in get_nodes function on propar master.
 * 0.3.0 - Improved propar performance, added additional dump mode.

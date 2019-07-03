@@ -787,5 +787,4 @@
 {"description":"Fieldbus interface (main interface, fieldbus1)","filter":"","id":"622","name":"BusIntIdx","parameter":"378","value":"0"},
 {"description":"Instrument interface (fieldbus2)","filter":"","id":"623","name":"BusIntIdx","parameter":"378","value":"1"},
 {"description":"Display interface","filter":"","id":"624","name":"BusIntIdx","parameter":"378","value":"2"},
-{"description":"Service interface","filter":"","id":"625","name":"BusIntIdx","parameter":"378","value":"3"},
-{"description":"HART interface","filter":"","id":"626","name":"BusIntIdx","parameter":"378","value":"4"}]}
+{"description":"Service interface","filter":"","id":"625","name":"BusIntIdx","parameter":"378","value":"3"}]}

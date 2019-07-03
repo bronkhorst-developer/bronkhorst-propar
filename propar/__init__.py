@@ -43,7 +43,8 @@ pp_status_codes = { 0: 'PP_STATUS_OK',
                    31: 'PP_STATUS_ERROR_CLOSE_COMM',
                    32: 'PP_STATUS_SYNC_ERROR',
                    33: 'PP_STATUS_SEND_ERROR',
-                   34: 'PP_STATUS_PROTOCOL_ERROR'}
+                   34: 'PP_STATUS_PROTOCOL_ERROR',
+                   35: 'PP_STATUS_MODULE_BUFFER_OVERFLOW'}
                    
 # propar commands
 PP_COMMAND_STATUS                =    0  # status message
@@ -210,7 +211,7 @@ class master(object):
     """
     try:
       # serial propar interface, provides propar message dicts.
-      self.__propar = _propar_provider(baudrate, comport)
+      self.propar = _propar_provider(baudrate, comport)
     except:
       raise
 
@@ -219,7 +220,7 @@ class master(object):
     self.comport = comport
 
     # propar message builder
-    self.__propar_builder = _propar_builder()
+    self.propar_builder = _propar_builder()
     
     # debug flags
     self.debug_requests = False
@@ -227,6 +228,8 @@ class master(object):
     
     # sequence number
     self.seq = 0
+    # lock for sequence
+    self.seq_lock = threading.Lock()
     
     # list of active messages
     self.__pending_requests   = []    
@@ -242,19 +245,19 @@ class master(object):
 
   def set_baudrate(self, baudrate):
     """Set the baudrate used for communication."""
-    self.__propar.set_baudrate(baudrate)
+    self.propar.set_baudrate(baudrate)
 
   def dump(self, level=1): 
     """Enable printing of all serial data to the console."""
-    self.__propar.dump = level
+    self.propar.dump = level
   
   def stop(self): 
     """Disconnect the comport of the provider."""
-    self.__propar.stop()
+    self.propar.stop()
     
   def start(self): 
     """Reconnect the comport of the provider."""
-    self.__propar.start()
+    self.propar.start()
   
   def get_nodes(self, find_first=True):
     """Get nodes on the network. Will scan from 1 to local address to find the first node!""" 
@@ -284,21 +287,18 @@ class master(object):
       resp = self.read_parameters(parms)
 
       if resp[0]['status'] != PP_STATUS_OK:
-        if resp[0]['status'] == PP_STATUS_MODULE_BUFFER_OVERFLOW:
-          if self.debug:
-            print("Received status PP_STATUS_MODULE_BUFFER_OVERFLOW. Retry reading parameters separately.")
-          # fall back to single requests for each parameter
-          resp = [None, None, None]
-          resp[0] = self.read_parameters([parms[0]])[0]
-          resp[1] = self.read_parameters([parms[1]])[0]
-          resp[2] = self.read_parameters([parms[2]])[0]
-          for r in resp:
-            if r['status'] != PP_STATUS_OK:
-              scan_address = 0
-        else:
-          if self.debug:
-            print("Received status {:}. Abort.".format(resp[0]['status']))
-          scan_address = 0
+        if self.debug:
+          print("Received status {:}. Retry reading parameters.".format(resp[0]['status']))
+        # fall back to single requests for each parameter
+        resp = [None, None, None]
+        resp[0] = self.read_parameters([parms[0]])[0]
+        resp[1] = self.read_parameters([parms[1]])[0]
+        resp[2] = self.read_parameters([parms[2]])[0]
+        for res, req in zip(resp, parms):
+          if res['status'] != PP_STATUS_OK:
+            scan_address = 0
+            if self.debug:
+              print("Received status {:} for parameter {:}. Abort.".format(res['status'], req))
 
       if scan_address != 0:
         # get serial number from id string
@@ -340,7 +340,7 @@ class master(object):
 
   def __message_handler_task(self):
     """Handle propar messages (read/write requests) from the message queue in the propar_serial object.
-    Read a propar message from self.__propar (_propar_provider)
+    Read a propar message from self.propar (_propar_provider)
     Could theoretically be any type of message, but here we only process:
       * Status
       * Error
@@ -372,13 +372,14 @@ class master(object):
       self.__pending_requests = filtered_requests
 
       # Read new propar message
-      propar_message = self.__propar.read_propar_message()            
+      propar_message = self.propar.read_propar_message()            
       
       if propar_message:              
         # Match the propar_message with a sent request (by matching sequence numbers)
         request = None        
-        for request in self.__pending_requests:
-          if request['message']['seq'] == propar_message['seq']:
+        for req in self.__pending_requests:
+          if req['message']['seq'] == propar_message['seq']:
+            request = req
             break
       
         # Debug info of the match
@@ -405,7 +406,7 @@ class master(object):
           elif propar_message['data'][0] == PP_COMMAND_SEND_PARM:  
             if request['message']['data'][0] == PP_COMMAND_REQUEST_PARM:
               # read parameter objects from response message
-              parameters = self.__propar_builder.read_pp_send_parameter_message(propar_message)                            
+              parameters = self.propar_builder.read_pp_send_parameter_message(propar_message)                            
               # convert extended parameter types
               fixed_parameters = []
               for org_parm, recv_parm in zip(request['parameters'], parameters):              
@@ -436,9 +437,10 @@ class master(object):
       
   def __next_seq(self):
     """Get next sequence number"""
-    self.seq += 1
-    if self.seq > 255:
-      self.seq = 0
+    with self.seq_lock:
+      self.seq += 1
+      if self.seq > 255:
+        self.seq = 0
     return self.seq    
       
       
@@ -497,12 +499,12 @@ class master(object):
     request_message['seq' ] = self.__next_seq()        
     
     # Build the request message (will update length and data fields)
-    request_message = self.__propar_builder.build_pp_request_parameter_message(request_message, parameters)     
+    request_message = self.propar_builder.build_pp_request_parameter_message(request_message, parameters)     
     # Add this message to the pending requests list
     self.__pending_requests.append({'message': request_message, 'parameters': parameters, 'age': time.time(), 'callback': callback})
       
     # Write the message to the propar interface
-    self.__propar.write_propar_message(request_message)
+    self.propar.write_propar_message(request_message)
     
     if callback != None:
       return None
@@ -571,7 +573,7 @@ class master(object):
     
     write_message['node'] = parameters[0]['node']
     write_message['seq' ] = self.__next_seq()    
-    write_message = self.__propar_builder.build_pp_send_parameter_message(write_message, parameters, command)
+    write_message = self.propar_builder.build_pp_send_parameter_message(write_message, parameters, command)
     
     if command == PP_COMMAND_SEND_PARM_WITH_ACK:
       self.__pending_requests.append({'message': write_message, 'parameters': parameters, 'age': time.time(), 'callback': callback})
@@ -579,7 +581,7 @@ class master(object):
     if self.debug:
       print("Sent Message:", write_message)
       
-    self.__propar.write_propar_message(write_message)
+    self.propar.write_propar_message(write_message)
     
     if command == PP_COMMAND_SEND_PARM_WITH_ACK and callback == None:
       # Wait for processed response to appear magically!
@@ -1176,7 +1178,7 @@ class _propar_provider(object):
     dump 2 = dump all
     """
     try:
-      self.__serial = serial.Serial(comport, baudrate, timeout=0, write_timeout=0, xonxoff=False, rtscts=False, dsrdtr=False)
+      self.serial = serial.Serial(comport, baudrate, timeout=0, write_timeout=0, xonxoff=False, rtscts=False, dsrdtr=False)
     except:
       raise
 
@@ -1208,26 +1210,26 @@ class _propar_provider(object):
     self.paused = False
 
     # thread for reading serial data, will put all bytes into process_propar_byte
-    self.serial_read_thread = threading.Thread(target=self.__serial_read_task, args=())
+    self.serial_read_thread = threading.Thread(target=self.serial_read_task, args=())
     self.serial_read_thread.daemon = True
     self.serial_read_thread.start()
 
 
   def set_baudrate(self, baudrate):
-    self.__serial.baudrate = baudrate
+    self.serial.baudrate = baudrate
 
 
   def stop(self):
     self.paused = True
-    self.__serial.close()
+    self.serial.close()
 
 
   def start(self):
-    self.__serial.open()
+    self.serial.open()
     self.paused = False
 
 
-  def __serial_read_task(self):
+  def serial_read_task(self):
     """This function is responsible for reading bytes from the serial port and
     processing the received bytes according to the binary propar protocol to
     build propar messages to put into the queue.
@@ -1238,7 +1240,7 @@ class _propar_provider(object):
   	  # due to thread, this can cause read to error out.	  
       try:
         if self.paused == False:
-          received_byte = self.__serial.read()
+          received_byte = self.serial.read()
           if received_byte:
             was_propar_byte = self.__process_propar_byte(received_byte)
             if self.dump != 0:
@@ -1288,8 +1290,7 @@ class _propar_provider(object):
     if self.debug:
       print("TX:", bin_pp_msg)
     
-    #self.__transmit_queue.append(bytes(bin_pp_msg))
-    self.__serial.write(bytes(bin_pp_msg))
+    self.serial.write(bytes(bin_pp_msg))
     
 
   def read_propar_message(self):
