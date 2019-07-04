@@ -1178,7 +1178,7 @@ class _propar_provider(object):
     dump 2 = dump all
     """
     try:
-      self.serial = serial.Serial(comport, baudrate, timeout=0, write_timeout=0, xonxoff=False, rtscts=False, dsrdtr=False)
+      self.serial = serial.Serial(comport, baudrate, timeout=0.01, write_timeout=0, xonxoff=False, rtscts=False, dsrdtr=False)
     except:
       raise
 
