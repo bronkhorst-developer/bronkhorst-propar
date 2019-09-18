@@ -420,6 +420,12 @@ class master(object):
                 if org_parm['parm_type'] == PP_TYPE_BSINT16 and recv_parm['parm_type'] == PP_TYPE_INT16:
                   if recv_parm['data'] > 0xA3D6: # 41942
                     recv_parm['data'] = (0xFFFF - recv_parm['data']) * (-1)                  
+                # copy over dde_nr and parm_name when present in org_parm
+                if 'dde_nr' in org_parm.keys():
+                  recv_parm['dde_nr'] = org_parm['dde_nr']
+                if 'parm_name' in org_parm.keys():
+                  recv_parm['parm_name'] = org_parm['parm_name']
+                # save fixed parameter
                 fixed_parameters.append(recv_parm)              
               parameters = fixed_parameters
 
