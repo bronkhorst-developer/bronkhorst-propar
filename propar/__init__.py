@@ -105,6 +105,10 @@ PP_TYPE_INT32                    = 0x40  # integer, 32 bit
 PP_TYPE_FLOAT                    = 0x41  # floating point
 PP_TYPE_STRING                   = 0x60  # string
 
+# propar communication modes
+PP_MODE_BINARY                   = 0
+PP_MODE_ASCII                    = 1
+
 # propar max parameter length (strings)
 MAX_PP_PARM_LEN                  =   61  # max parameter length  
 
@@ -1167,7 +1171,7 @@ class _propar_builder(object):
 class _propar_provider(object):
   """Implements the propar interface for master or slave"""
 
-  def __init__(self, baudrate, comport, debug=False, dump=0):
+  def __init__(self, baudrate, comport, debug=False, dump=0, mode=PP_MODE_BINARY):
     """Implements the propar interface for the propar_slave/master class.
     Creates a serial connection that reads binary propar messages into a queue.
     The connection can also write messages to the serial connection.
@@ -1190,6 +1194,7 @@ class _propar_provider(object):
 
     self.debug = debug
     self.dump  = dump
+    self.mode  = mode
 
     # queues for propar data packets
     self.__receive_queue  = collections.deque()
@@ -1261,7 +1266,7 @@ class _propar_provider(object):
   def write_propar_message(self, propar_message):
     """Writes a propar message to the serial port.
     propar_message is a dictionary containing the message seq, node, len, and
-    data. This is converted to a binary propar message before sending.
+    data. This is converted to a binary or ascii propar message before sending.
     """
     if ('seq'  not in propar_message or
         'node' not in propar_message or
@@ -1269,34 +1274,46 @@ class _propar_provider(object):
         'data' not in propar_message  ):
       raise Exception("propar_message not valid!")
 
-    bin_pp_msg = []
-    bin_pp_msg.append(self.BYTE_DLE)
-    bin_pp_msg.append(self.BYTE_STX)
+    if self.mode == PP_MODE_BINARY:
+      msg = []
+      msg.append(self.BYTE_DLE)
+      msg.append(self.BYTE_STX)
 
-    bin_pp_msg.append(propar_message['seq' ])
+      msg.append(propar_message['seq' ])
     if propar_message['seq'] == self.BYTE_DLE:
-      bin_pp_msg.append(propar_message['seq' ])
+        msg.append(propar_message['seq' ])
 
-    bin_pp_msg.append(propar_message['node'])
+      msg.append(propar_message['node'])
     if propar_message['node'] == self.BYTE_DLE:
-      bin_pp_msg.append(propar_message['node'])
+        msg.append(propar_message['node'])
 
-    bin_pp_msg.append(propar_message['len' ])
+      msg.append(propar_message['len' ])
     if propar_message['len'] == self.BYTE_DLE:
-      bin_pp_msg.append(propar_message['len' ])
+        msg.append(propar_message['len' ])
 
     for byte in propar_message['data']:
-      bin_pp_msg.append(byte)
+        msg.append(byte)
       if byte == self.BYTE_DLE:
-        bin_pp_msg.append(byte)
+          msg.append(byte)
 
-    bin_pp_msg.append(self.BYTE_DLE)
-    bin_pp_msg.append(self.BYTE_ETX)
+      msg.append(self.BYTE_DLE)
+      msg.append(self.BYTE_ETX)
 
     if self.debug:
-      print("TX:", bin_pp_msg)
+        print("TX:", msg)
     
-    self.serial.write(bytes(bin_pp_msg))
+      self.serial.write(bytes(msg))
+    
+    else:
+      # no sequence in ascii mode, but we need it to match in master
+      # therefore, store it, and set it on receive (as we do request->response)
+      self.last_seq = propar_message['seq']
+      # convert data, build and send message
+      data = ''.join(['{:02X}'.format(b) for b in propar_message['data']])
+      msg  = ':{:02X}{:02X}{:}\r\n'.format(propar_message['len'] + 1, propar_message['node'], data)
+      if self.debug:
+        print("TX:", bytes(msg, encoding='ascii'))
+      self.serial.write(bytes(msg, encoding='ascii'))
     
 
   def read_propar_message(self):
@@ -1320,12 +1337,14 @@ class _propar_provider(object):
 
 
   def __process_propar_byte(self, received_byte):
-    """Processes the received_byte following the binary propar protocol.
+    """Processes the received_byte following the active propar protocol (mode).
     Fully received data will be placed in the __receive_queue as a
     propar message.
     """
     was_propar_byte = True
     received_byte   = int.from_bytes(received_byte, byteorder='big')
+
+    if self.mode == PP_MODE_BINARY:    
 
     if self.RECEIVE_START_1 is self.__receive_state:
       self.__receive_buffer = []
@@ -1364,6 +1383,48 @@ class _propar_provider(object):
       else:
         self.__receive_state = self.RECEIVE_ERROR
 
+    else: # PP_MODE_ASCII
+      
+      if self.RECEIVE_START_1 is self.__receive_state:
+        if received_byte == 0x3A:
+          self.__receive_state = self.RECEIVE_MESSAGE_DATA
+          self.__receive_buffer = []
+        else:
+          was_propar_byte = False
+
+      elif self.RECEIVE_MESSAGE_DATA is self.__receive_state:
+        if received_byte == 0x0D:
+          self.__receive_state = self.RECEIVE_MESSAGE_DATA_OR_END
+        elif((received_byte >= 48 and received_byte <=  57) or 
+             (received_byte >= 65 and received_byte <=  90) or
+             (received_byte >= 97 and received_byte <= 122)):    
+          self.__receive_buffer.append(received_byte)
+        else:
+          self.__receive_state = self.RECEIVE_ERROR
+
+      elif self.RECEIVE_MESSAGE_DATA_OR_END is self.__receive_state:
+        if received_byte == 0x0A:
+          if len(self.__receive_buffer) > 4:
+            msg = bytes(self.__receive_buffer)
+            propar_message = {}
+            propar_message['seq' ] = self.last_seq
+            propar_message['len' ] = int(msg[0:2], 16) - 1
+            propar_message['node'] = int(msg[2:4], 16)
+            propar_message['data'] = []
+            try:
+              data = msg[4:]
+              for i in range(0, len(data), 2):
+                byte = int(data[i:i+2], 16) 
+                propar_message['data'].append(byte)
+            except:
+              pass
+            self.__receive_queue.append(propar_message)
+            if self.debug:
+              print("RX:", b':' + msg + b'\r\n')
+          self.__receive_state = self.RECEIVE_START_1
+        else:
+          self.__receive_state = self.RECEIVE_ERROR
+        
     if self.__receive_state == self.RECEIVE_ERROR:
       self.__receive_state = self.RECEIVE_START_1
       self.__receive_error_count += 1
@@ -1372,3 +1433,4 @@ class _propar_provider(object):
       was_propar_byte = False
     
     return was_propar_byte
+
