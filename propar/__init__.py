@@ -439,7 +439,7 @@ class master(object):
           if request['callback'] == None:
             # the message is now processed (our tx resulting in an rx message)
             # add it to the processed buffer (read from read/write_parameter if no callback used)
-            self.__processed_requests.append({'message': propar_message, 'parameters': parameters, 'age': time.time()})
+            self.__processed_requests.append({'message': propar_message, 'parameters': parameters, 'request': request, 'age': time.time()})
                     
           # delete the now old pending request.
           self.__pending_requests.remove(request)
@@ -511,7 +511,8 @@ class master(object):
     # Build the request message (will update length and data fields)
     request_message = self.propar_builder.build_pp_request_parameter_message(request_message, parameters)     
     # Add this message to the pending requests list
-    self.__pending_requests.append({'message': request_message, 'parameters': parameters, 'age': time.time(), 'callback': callback})
+    request = {'message': request_message, 'parameters': parameters, 'age': time.time(), 'callback': callback}
+    self.__pending_requests.append(request)
       
     # Write the message to the propar interface
     self.propar.write_propar_message(request_message)
@@ -526,9 +527,12 @@ class master(object):
         time.sleep(0.00001)
         for resp in self.__processed_requests:
           if resp['message']['seq'] == request_message['seq']:
-            response = resp
-            self.__processed_requests.remove(resp) 
-            break          
+            if resp['request'] != request: # Stale request, remove
+              self.__processed_requests.remove(resp) 
+            else:
+              response = resp
+              self.__processed_requests.remove(resp) 
+              break
       
       # no response, timeout
       if response is None:
@@ -586,7 +590,8 @@ class master(object):
     write_message = self.propar_builder.build_pp_send_parameter_message(write_message, parameters, command)
     
     if command == PP_COMMAND_SEND_PARM_WITH_ACK:
-      self.__pending_requests.append({'message': write_message, 'parameters': parameters, 'age': time.time(), 'callback': callback})
+      request = {'message': write_message, 'parameters': parameters, 'age': time.time(), 'callback': callback}
+      self.__pending_requests.append(request)
     
     if self.debug:
       print("Sent Message:", write_message)
@@ -601,8 +606,12 @@ class master(object):
         time.sleep(0.00001)
         for resp in self.__processed_requests:
           if resp['message']['seq'] == write_message['seq']:
-            response = resp
-            self.__processed_requests.remove(resp)
+            if resp['request'] != request: # Stale request, remove
+              self.__processed_requests.remove(resp) 
+            else:
+              response = resp
+              self.__processed_requests.remove(resp) 
+              break
       if response is None:
         return PP_STATUS_TIMEOUT_ANSWER
       else:
@@ -1280,28 +1289,28 @@ class _propar_provider(object):
       msg.append(self.BYTE_STX)
 
       msg.append(propar_message['seq' ])
-    if propar_message['seq'] == self.BYTE_DLE:
+      if propar_message['seq'] == self.BYTE_DLE:
         msg.append(propar_message['seq' ])
 
       msg.append(propar_message['node'])
-    if propar_message['node'] == self.BYTE_DLE:
+      if propar_message['node'] == self.BYTE_DLE:
         msg.append(propar_message['node'])
 
       msg.append(propar_message['len' ])
-    if propar_message['len'] == self.BYTE_DLE:
+      if propar_message['len'] == self.BYTE_DLE:
         msg.append(propar_message['len' ])
 
-    for byte in propar_message['data']:
+      for byte in propar_message['data']:
         msg.append(byte)
-      if byte == self.BYTE_DLE:
+        if byte == self.BYTE_DLE:
           msg.append(byte)
 
       msg.append(self.BYTE_DLE)
       msg.append(self.BYTE_ETX)
 
-    if self.debug:
+      if self.debug:
         print("TX:", msg)
-    
+
       self.serial.write(bytes(msg))
     
     else:
@@ -1346,43 +1355,43 @@ class _propar_provider(object):
 
     if self.mode == PP_MODE_BINARY:    
 
-    if self.RECEIVE_START_1 is self.__receive_state:
-      self.__receive_buffer = []
-      if received_byte == self.BYTE_DLE:
-        self.__receive_state = self.RECEIVE_START_2
-      else:
-        was_propar_byte = False
+      if self.RECEIVE_START_1 is self.__receive_state:
+        self.__receive_buffer = []
+        if received_byte == self.BYTE_DLE:
+          self.__receive_state = self.RECEIVE_START_2
+        else:
+          was_propar_byte = False
 
-    elif self.RECEIVE_START_2 is self.__receive_state:
-      if received_byte == self.BYTE_STX:
-        self.__receive_state = self.RECEIVE_MESSAGE_DATA
-      else:
-        self.__receive_state = self.RECEIVE_ERROR
+      elif self.RECEIVE_START_2 is self.__receive_state:
+        if received_byte == self.BYTE_STX:
+          self.__receive_state = self.RECEIVE_MESSAGE_DATA
+        else:
+          self.__receive_state = self.RECEIVE_ERROR
 
-    elif self.RECEIVE_MESSAGE_DATA is self.__receive_state:
-      if received_byte == self.BYTE_DLE:
-        self.__receive_state = self.RECEIVE_MESSAGE_DATA_OR_END
-      else:
-        self.__receive_buffer.append(received_byte)
+      elif self.RECEIVE_MESSAGE_DATA is self.__receive_state:
+        if received_byte == self.BYTE_DLE:
+          self.__receive_state = self.RECEIVE_MESSAGE_DATA_OR_END
+        else:
+          self.__receive_buffer.append(received_byte)
 
-    elif self.__receive_state is self.RECEIVE_MESSAGE_DATA_OR_END:
-      if received_byte == self.BYTE_DLE:
-        self.__receive_buffer.append(received_byte)
-        self.__receive_state = self.RECEIVE_MESSAGE_DATA
-      elif received_byte == self.BYTE_ETX:
-        if len(self.__receive_buffer) > 3:
-          propar_message = {}
-          propar_message['seq' ] = self.__receive_buffer[0 ]
-          propar_message['node'] = self.__receive_buffer[1 ]
-          propar_message['len' ] = self.__receive_buffer[2 ]
-          propar_message['data'] = self.__receive_buffer[3:]
-          self.__receive_queue.append(propar_message)
-          if self.debug:
-            print("RX:", propar_message['data'])
-        self.__receive_state = self.RECEIVE_START_1
-      else:
-        self.__receive_state = self.RECEIVE_ERROR
-
+      elif self.__receive_state is self.RECEIVE_MESSAGE_DATA_OR_END:
+        if received_byte == self.BYTE_DLE:
+          self.__receive_buffer.append(received_byte)
+          self.__receive_state = self.RECEIVE_MESSAGE_DATA
+        elif received_byte == self.BYTE_ETX:
+          if len(self.__receive_buffer) > 3:
+            propar_message = {}
+            propar_message['seq' ] = self.__receive_buffer[0 ]
+            propar_message['node'] = self.__receive_buffer[1 ]
+            propar_message['len' ] = self.__receive_buffer[2 ]
+            propar_message['data'] = self.__receive_buffer[3:]
+            self.__receive_queue.append(propar_message)
+            if self.debug:
+              print("RX:", propar_message['data'])
+          self.__receive_state = self.RECEIVE_START_1
+        else:
+          self.__receive_state = self.RECEIVE_ERROR
+    
     else: # PP_MODE_ASCII
       
       if self.RECEIVE_START_1 is self.__receive_state:
@@ -1431,6 +1440,6 @@ class _propar_provider(object):
       if self.debug:
         print("Receive Error:", self.__receive_error_count, propar_message)        
       was_propar_byte = False
-    
+
     return was_propar_byte
 
