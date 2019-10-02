@@ -1,3 +1,5 @@
+__version__ = "0.4.0-dev"
+
 import collections
 import os
 import json
@@ -5,8 +7,6 @@ import serial
 import struct
 import threading
 import time
-
-NAME = "propar"
 
 # status codes dict, input code, get string
 pp_status_codes = { 0: 'PP_STATUS_OK',
