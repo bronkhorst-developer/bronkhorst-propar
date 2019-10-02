@@ -185,9 +185,12 @@ When propar module data types are used, the module will perform the required con
 
 ### 0.4.0
 
-* When using parameters with ```'dde_nr'``` or ```'parm_name'``` fields in ```read_parameters```, these fields are now also included in the output parameters.
+* Added ```__version__``` attribute.
+* Added ```dde_nr``` and ```parm_name``` fields to output parameters of ```read_parameters```, when they are present in the request parameters.
 * Added experimental support for Propar ASCII. Can be enabled with ```master.propar.mode = propar.PP_MODE_ASCII``` (mode is set to ```propar.PP_MODE_BINARY``` by default).
-* Fix issue in request/response matching where when re-using a master after aborting a running action, the old response to that action would match the new request.
+* Changed formatting for debug messages to: ```TX/RX (Length): Data```.
+* Fixed bug in reading strings from response message (in a chained read).
+* Fixed bug in request/response matching where when re-using a master after aborting a running action (for example CTRL+C in an interactive python session), sometimes the old response to that action would match the new request.
 
 ### 0.3.4
 
