@@ -240,7 +240,7 @@ class master(object):
     self.__processed_requests = []
     
     # 500 ms timeout on all messages
-    self.__message_timeout = 0.5
+    self.response_timeout = 0.5
     
     # thread for processing propar messages
     self.msg_handler_thread = threading.Thread(target=self.__message_handler_task, args=())
@@ -273,15 +273,15 @@ class master(object):
       found_first_node = False
       scan_address     = 1     
       local_address    = self.read_parameters([{'node': 0x80, 'proc_nr': 0, 'parm_nr': 1, 'parm_type': PP_TYPE_INT8}])[0]['data']     
-      org_timeout = self.__message_timeout
-      self.__message_timeout = 0.05   # scan with small timeout to speed this up.
+      org_timeout = self.response_timeout
+      self.response_timeout = 0.05   # scan with small timeout to speed this up.
       while found_first_node == False and scan_address != local_address:
         resp = self.read_parameters([{'node': scan_address, 'proc_nr': 0, 'parm_nr': 1, 'parm_type': PP_TYPE_INT8}])
         if resp[0]['status'] == PP_STATUS_OK:
           found_first_node = True
         else:
           scan_address += 1
-      self.__message_timeout = org_timeout
+      self.response_timeout = org_timeout
 
     while scan_address != 0 and loop_detected == False:
       parms = [{'node': scan_address, 'proc_nr':   0, 'parm_nr': 1, 'parm_type': PP_TYPE_INT8  },# address of this node
@@ -361,7 +361,7 @@ class master(object):
       time.sleep(0.001)
   
       # Remove timed out requests based on age, and do callback with timeout when timed out!.      
-      check_time = time.time() - self.__message_timeout
+      check_time = time.time() - self.response_timeout
       filtered_requests = []
       for req in self.__pending_requests:
         if check_time <= req['age']:
@@ -521,7 +521,7 @@ class master(object):
       return None
     else:
       # Wait for processed response to appear magically!
-      timeout_time = time.time() + self.__message_timeout    
+      timeout_time = time.time() + self.response_timeout    
       response = None
       while time.time() <= timeout_time and response == None:
         time.sleep(0.00001)
@@ -600,7 +600,7 @@ class master(object):
     
     if command == PP_COMMAND_SEND_PARM_WITH_ACK and callback == None:
       # Wait for processed response to appear magically!
-      timeout_time = time.time() + self.__message_timeout    
+      timeout_time = time.time() + self.response_timeout    
       response = None
       while time.time() <= timeout_time and response == None:      
         time.sleep(0.00001)
