@@ -1309,7 +1309,7 @@ class _propar_provider(object):
       msg.append(self.BYTE_ETX)
 
       if self.debug:
-        print("TX:", msg)
+        print("TX ({:3d}): {:}".format(len(msg), ' '.join(["{:02X}".format(x) for x in msg])))
 
       self.serial.write(bytes(msg))
     
@@ -1321,7 +1321,7 @@ class _propar_provider(object):
       data = ''.join(['{:02X}'.format(b) for b in propar_message['data']])
       msg  = ':{:02X}{:02X}{:}\r\n'.format(propar_message['len'] + 1, propar_message['node'], data)
       if self.debug:
-        print("TX:", bytes(msg, encoding='ascii'))
+        print("TX ({:3d}):".format(len(msg)), bytes(msg, encoding='ascii'))
       self.serial.write(bytes(msg, encoding='ascii'))
     
 
@@ -1387,7 +1387,8 @@ class _propar_provider(object):
             propar_message['data'] = self.__receive_buffer[3:]
             self.__receive_queue.append(propar_message)
             if self.debug:
-              print("RX:", propar_message['data'])
+              l = self.__receive_buffer.count(0x10) + len(self.__receive_buffer)
+              print("RX ({:3d}): 10 02 {:} 10 03".format(l, ' '.join(["{:02X}".format(x) for x in self.__receive_buffer])))
           self.__receive_state = self.RECEIVE_START_1
         else:
           self.__receive_state = self.RECEIVE_ERROR
@@ -1429,7 +1430,7 @@ class _propar_provider(object):
               pass
             self.__receive_queue.append(propar_message)
             if self.debug:
-              print("RX:", b':' + msg + b'\r\n')
+              print("RX ({:3d}):".format(len(msg) + 3), b':' + msg + b'\r\n')
           self.__receive_state = self.RECEIVE_START_1
         else:
           self.__receive_state = self.RECEIVE_ERROR
