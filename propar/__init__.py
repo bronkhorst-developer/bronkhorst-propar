@@ -1067,13 +1067,13 @@ class _propar_builder(object):
           else:
             parameter['parm_size'] = message[pos]
             pos += 1
-            len = message_len - pos
+            slen = message_len - pos
             if parameter['parm_size'] == 0:
               cnt = pos
               while message[cnt] != 0 and cnt < message_len:
                 cnt += 1
               parameter['parm_size'] = cnt - pos              
-            if parameter['parm_size'] > len:
+            if parameter['parm_size'] > slen:
               read_status = PP_ERROR_PROTOCOL_ERROR              
             elif parameter['parm_size'] > MAX_PP_PARM_LEN - 1:
               read_status = PP_STATUS_BUFFER_OVERFLOW              
@@ -1083,7 +1083,7 @@ class _propar_builder(object):
                 parameter['data'] = string_bytes.decode('ascii')
               except:
                 parameter['data'] = string_bytes
-            pos += parameter['parm_size'] + 1
+            pos += parameter['parm_size']
 
       parameter['status'    ] = read_status
       parameter['status_pos'] = pos
