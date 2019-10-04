@@ -631,7 +631,7 @@ class database(object):
     if database_path == None:
       database_path = os.path.join(os.path.dirname(__file__), "parameters.json")
     with open(database_path) as f:
-      self.dde_list = json.load(f)
+      self.dde_list = json.load(f, encoding='utf-8')
       self.parm_list = self.dde_list['allparameters']
       self.parm_vals = self.dde_list['parvalue']
 
