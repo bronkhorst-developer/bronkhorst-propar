@@ -1196,14 +1196,14 @@ class _propar_provider(object):
     """Implements the propar interface for the propar_slave/master class.
     Creates a serial connection that reads binary propar messages into a queue.
     The connection can also write messages to the serial connection.
-    
+
     The read and write functions require a propar_message type, which is a
     dictionary with the following fields:
     propar_message['seq']       # Sequence Number (byte)
     propar_message['node']      # Node Address (byte)
     propar_message['len']       # Data Length (byte)
     propar_message['data']      # Data (list of bytes)
-    
+
     dump 0 = no dump
     dump 1 = dump non-propar
     dump 2 = dump all
@@ -1212,6 +1212,9 @@ class _propar_provider(object):
       self.serial = serial.Serial(comport, baudrate, timeout=0.01, write_timeout=0, xonxoff=False, rtscts=False, dsrdtr=False)
     except:
       raise
+ 
+	# size of the read performed on the serial port
+    self.serial_read_size = 1
 
     self.debug = debug
     self.dump  = dump
@@ -1272,9 +1275,9 @@ class _propar_provider(object):
   	  # due to thread, this can cause read to error out.	  
       try:
         if self.paused == False:
-          received_byte = self.serial.read()
-          if received_byte:
-            was_propar_byte = self.__process_propar_byte(received_byte)
+          serial_data = self.serial.read(self.serial_read_size)
+          for data_byte in serial_data:
+            was_propar_byte = self.__process_propar_byte(data_byte)
             if self.dump != 0:
               if self.dump == 2 or was_propar_byte == False:
                 print(received_byte.decode('cp437'), end='', flush=True)
@@ -1363,7 +1366,6 @@ class _propar_provider(object):
     propar message.
     """
     was_propar_byte = True
-    received_byte   = int.from_bytes(received_byte, byteorder='big')
 
     if self.mode == PP_MODE_BINARY:    
 
