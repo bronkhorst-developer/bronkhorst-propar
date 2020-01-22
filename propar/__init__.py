@@ -631,13 +631,28 @@ class database(object):
     if database_path == None:
       database_path = os.path.join(os.path.dirname(__file__), "parameters.json")
     with open(database_path) as f:
-      self.dde_list = json.load(f, encoding='utf-8')
-      self.parm_list = self.dde_list['allparameters']
-      self.parm_vals = self.dde_list['parvalue']
+      json_db        = json.load(f, encoding='utf-8')
+      parm_list      = json_db['allparameters']
+      self.parm_vals = json_db['parvalue']
+      self.dde_dict  = {}
+      self.pp_dict   = {}
+      # Create dicts for faster access to parameters
+      for parm in self.__rows_to_parms(parm_list):
+        # Create dde dict
+        self.dde_dict[parm['dde_nr']] = parm
+        # Create propar dict
+        proc_nr = parm['proc_nr']
+        parm_nr = parm['parm_nr']
+        if proc_nr not in self.pp_dict.keys():          
+          self.pp_dict[proc_nr] = {}
+        if parm_nr not in self.pp_dict[proc_nr].keys():
+          self.pp_dict[proc_nr][parm_nr] = []
+        self.pp_dict[proc_nr][parm_nr].append(parm)
+
 
   def __rows_to_parms(self, rows):
-    type_conv = {'c': PP_TYPE_INT8, 
-                 'i': PP_TYPE_INT16, 
+    type_conv = {'c': PP_TYPE_INT8,
+                 'i': PP_TYPE_INT16,
                  'l': PP_TYPE_INT32,
                  'f': PP_TYPE_FLOAT}
     parms = []
@@ -648,7 +663,6 @@ class database(object):
       p['proc_nr'] = int(r['process'])
       p['parm_nr'] = int(r['fbnr'])
       p['parm_type'] = type_conv[r['vartype']]
-
       # Set extended int types if required.
       if p['parm_type'] == PP_TYPE_INT16:
         # regular signed int
@@ -657,51 +671,52 @@ class database(object):
         # bronkhorst signed int
         elif int(r['min']) == -23593:
           p['parm_type'] = PP_TYPE_BSINT16
-
       if r['varlength'] != '':
         p['parm_type'] = PP_TYPE_STRING
       p['parm_name'] = r['longname']
       parms.append(p)
-    return parms 
-
-  def get_all_parameters(self):
-    return self.__rows_to_parms(self.parm_list)
-  
-  def get_parameters(self, dde_parameter_nrs):
-    """Get propar parameter objects from dde_parameter_nrs."""
-    rows = [obj for obj in self.parm_list if int(obj['parameter']) in dde_parameter_nrs]
-    parms = self.__rows_to_parms(rows)
     return parms
 
-  def get_parameter(self, dde_parameter_nr):  
+  def get_all_parameters(self):
+    return self.dde_dict.values()
+
+  def get_parameters(self, dde_parameter_nrs):
+    """Get propar parameter objects from dde_parameter_nrs."""
+    parms = []
+    for dde_nr in dde_parameter_nrs:
+      parms.append(self.get_parameter(dde_nr))
+    return parms
+
+  def get_parameter(self, dde_parameter_nr):
     """Get propar parameter object from dde_parameter_nr."""
-    parms = self.get_parameters([dde_parameter_nr])
-    return parms[0]    
-    
-  def get_parameters_like(self, like_this):  
+    return self.dde_dict[dde_parameter_nr]
+
+  def get_parameters_like(self, like_this):
     """Get propar list of parameters that match the like_this argument.
     Example: like_this = "bus" will return all parameters that contain the string bus somewhere in the LongName field.
     """
-    rows = [obj for obj in self.parm_list if like_this.lower().replace(' ', '') in obj['longname'].lower().replace(' ', '')]
-    parms = self.__rows_to_parms(rows)
+    like_this =  like_this.lower().replace(' ', '')
+    parms = [obj for obj in self.dde_dict.values() if like_this in obj['parm_name'].lower().replace(' ', '')]    
     return parms
 
-  def get_parameter_values(self, dde_parameter_nr):  
+  def get_parameter_values(self, dde_parameter_nr):
     """Get list of possible values for given dde parameter number."""
-    rows = [obj for obj in self.parm_vals if int(obj['parameter'])==dde_parameter_nr]
+    rows = [obj for obj in self.parm_vals if int(obj['parameter']) == dde_parameter_nr]
     return rows
-    
+
   def get_propar_parameter(self, process, parameter):
     """Get propar parameter object for the process parameter combo."""
-    rows = [obj for obj in self.parm_list if (int(obj['process']) == process and int(obj['fbnr']) == parameter)]
-    parms = self.__rows_to_parms(rows)
-    return parms
+    try:
+      return self.pp_dict[process][parameter]
+    except:
+      return None
 
   def get_propar_parameters(self, process):
     """Get propar parameter object for the given process."""
-    rows = [obj for obj in self.parm_list if int(obj['process']) == process]
-    parms = self.__rows_to_parms(rows)
-    return parms
+    try:
+      return self.pp_dict[process]
+    except:
+      return None
 
     
     
