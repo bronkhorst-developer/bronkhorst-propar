@@ -339,6 +339,32 @@ class master(object):
     return found_nodes
 
 
+  def __fix_parameters(self, requested, received):
+    """Fix parameters by adjusting type of received parameters with requested type."""
+    fixed_parameters = []
+    for org_parm, recv_parm in zip(requested, received):
+      try:
+        # fix float
+        if org_parm['parm_type'] == PP_TYPE_FLOAT and recv_parm['parm_type'] == PP_TYPE_INT32:
+          recv_parm['data'] = struct.unpack('f', struct.pack('I', recv_parm['data']))[0]
+        # fix sint16
+        if org_parm['parm_type'] == PP_TYPE_SINT16 and recv_parm['parm_type'] == PP_TYPE_INT16:
+          recv_parm['data'] = struct.unpack('h', struct.pack('H', recv_parm['data']))[0]
+        # fix bsint16
+        if org_parm['parm_type'] == PP_TYPE_BSINT16 and recv_parm['parm_type'] == PP_TYPE_INT16:
+          if recv_parm['data'] > 0xA3D6: # 41942
+            recv_parm['data'] = (0xFFFF - recv_parm['data']) * (-1)
+        # copy over dde_nr and parm_name when present in org_parm
+        if 'dde_nr' in org_parm.keys():
+          recv_parm['dde_nr'] = org_parm['dde_nr']
+        if 'parm_name' in org_parm.keys():
+          recv_parm['parm_name'] = org_parm['parm_name']
+      except:
+        pass
+      fixed_parameters.append(recv_parm)
+    return fixed_parameters
+
+
   def __message_handler_task(self):
     """Handle propar messages (read/write requests) from the message queue in the propar_serial object.
     Read a propar message from self.propar (_propar_provider)
@@ -355,36 +381,35 @@ class master(object):
     For read the callback returns the list of parameters with data. Callback is per request, not per parameter.
     """    
     while True:
-      time.sleep(0.001)
-  
-      # Remove timed out requests based on age, and do callback with timeout when timed out!.      
-      check_time = time.time() - self.response_timeout
-      filtered_requests = []
-      for req in self.__pending_requests:
-        if check_time <= req['age']:
-          filtered_requests.append(req)
-        else:
-          if req['callback'] != None:            
-            if req['data'][0] == PP_COMMAND_SEND_PARM:
-              req['callback']([{'status': PP_STATUS_TIMEOUT_ANSWER, 'data': None}])
-            else:
-              req['callback'](PP_STATUS_TIMEOUT_ANSWER)
-
-      self.__pending_requests = filtered_requests
-
       # Read new propar message
-      propar_message = self.propar.read_propar_message()            
-      
-      if propar_message:              
+      propar_message = self.propar.read_propar_message()
+
+      if propar_message == None:
+        time.sleep(0.001)
+      else:
+        # Remove timed out requests based on age, and do callback with timeout when timed out!.
+        check_time = time.time() - self.response_timeout
+        filtered_requests = []
+        for req in self.__pending_requests:
+          if check_time <= req['age']:
+            filtered_requests.append(req)
+          else:
+            if req['callback'] != None:
+              if req['data'][0] == PP_COMMAND_SEND_PARM:
+                req['callback']([{'status': PP_STATUS_TIMEOUT_ANSWER, 'data': None}])
+              else:
+                req['callback'](PP_STATUS_TIMEOUT_ANSWER)
+        self.__pending_requests = filtered_requests
+
         # Match the propar_message with a sent request (by matching sequence numbers)
-        request = None        
+        request = None
         for req in self.__pending_requests:
           if req['message']['seq'] == propar_message['seq']:
             request = req
             break
-      
+
         # Debug info of the match
-        if self.debug_requests:        
+        if self.debug_requests:
           print("Pending   Requests", len(self.__pending_requests))
           print("Processed Requests", len(self.__processed_requests))
           if request:
@@ -395,49 +420,29 @@ class master(object):
 
         # If we matched to a request
         if request:
-          parameters = None           
-
-          if propar_message['data'][0] == PP_COMMAND_STATUS and request['callback'] != None:                                
-            # When callback is used, return the status
+          parameters = None
+          # A status or error message with callback (write ack)
+          if propar_message['data'][0] == PP_COMMAND_STATUS and request['callback'] != None:
+            # When callback is used, return the status (just the status), else pass a message
             if request['message']['data'][0] == PP_COMMAND_SEND_PARM_WITH_ACK:
               request['callback'](propar_message['data'][1])
             else:
               request['callback']([{'status': propar_message['data'][1], 'data': None}])
-
-          elif propar_message['data'][0] == PP_COMMAND_SEND_PARM:  
+          # Read data (response to parameter request)
+          elif propar_message['data'][0] == PP_COMMAND_SEND_PARM:
             if request['message']['data'][0] == PP_COMMAND_REQUEST_PARM:
               # read parameter objects from response message
-              parameters = self.propar_builder.read_pp_send_parameter_message(propar_message)                            
-              # convert extended parameter types
-              fixed_parameters = []
-              for org_parm, recv_parm in zip(request['parameters'], parameters):              
-                # fix float
-                if org_parm['parm_type'] == PP_TYPE_FLOAT and recv_parm['parm_type'] == PP_TYPE_INT32:
-                  recv_parm['data'] = struct.unpack('f', struct.pack('I', recv_parm['data']))[0]       
-                # fix sint16
-                if org_parm['parm_type'] == PP_TYPE_SINT16 and recv_parm['parm_type'] == PP_TYPE_INT16:
-                  recv_parm['data'] = struct.unpack('h', struct.pack('H', recv_parm['data']))[0]       
-                # fix bsint16
-                if org_parm['parm_type'] == PP_TYPE_BSINT16 and recv_parm['parm_type'] == PP_TYPE_INT16:
-                  if recv_parm['data'] > 0xA3D6: # 41942
-                    recv_parm['data'] = (0xFFFF - recv_parm['data']) * (-1)                  
-                # copy over dde_nr and parm_name when present in org_parm
-                if 'dde_nr' in org_parm.keys():
-                  recv_parm['dde_nr'] = org_parm['dde_nr']
-                if 'parm_name' in org_parm.keys():
-                  recv_parm['parm_name'] = org_parm['parm_name']
-                # save fixed parameter
-                fixed_parameters.append(recv_parm)              
-              parameters = fixed_parameters
-
-              if request['callback'] != None:              
-                request['callback'](parameters)            
-            
+              parameters = self.propar_builder.read_pp_send_parameter_message(propar_message)
+              # Update data of received parameters with data type and values of requested parameters
+              parameters = self.__fix_parameters(request['parameters'], parameters)
+              # Call callback if present
+              if request['callback'] != None:
+                request['callback'](parameters)
+          # The message is now processed (our tx resulting in an rx message)
+          # add it to the processed buffer (read from read/write_parameter if no callback used)
           if request['callback'] == None:
-            # the message is now processed (our tx resulting in an rx message)
-            # add it to the processed buffer (read from read/write_parameter if no callback used)
             self.__processed_requests.append({'message': propar_message, 'parameters': parameters, 'request': request, 'age': time.time()})
-                    
+
           # delete the now old pending request.
           self.__pending_requests.remove(request)
 
