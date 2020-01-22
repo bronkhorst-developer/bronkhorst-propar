@@ -106,8 +106,8 @@ PP_TYPE_FLOAT                    = 0x41  # floating point
 PP_TYPE_STRING                   = 0x60  # string
 
 # propar communication modes
-PP_MODE_BINARY                   = 0
-PP_MODE_ASCII                    = 1
+PP_MODE_BINARY                   =    0  # Binary mode
+PP_MODE_ASCII                    =    1  # ASCII mode
 
 # propar max parameter length (strings)
 MAX_PP_PARM_LEN                  =   61  # max parameter length  
@@ -122,17 +122,14 @@ class instrument(object):
   def __init__(self, comport, address=0x80, baudrate=38400):
     """Create our master (or use existing)."""
     self.address = address
-    self.db      = database()
-
     if comport in _PROPAR_MASTERS:
       self.master = _PROPAR_MASTERS[comport]
     else: 
       self.master = master(comport, baudrate)      
+    self.db = self.master.db
 
   def readParameter(self, dde_nr):
     """Reads parameter from FlowDDE Nr from this instrument."""
-    if self.db is None:
-      self.db = database()
     try:
       parm = self.db.get_parameter(dde_nr)
     except:
@@ -146,8 +143,6 @@ class instrument(object):
 
   def writeParameter(self, dde_nr, data):
     """Write parameter by FlowDDE Nr to this instrument."""
-    if self.db is None:
-      self.db = database()
     try:
       parm = self.db.get_parameter(dde_nr)
     except:
@@ -211,7 +206,7 @@ class master(object):
     """Implements a propar master device. After initializing this can
     be used to read/write parameters of an instrument. When local host functionality
     is used (MBC with flowbus), it is also possible to communicate with other
-    nodes on the network.   
+    nodes on the network.
     """
     try:
       # serial propar interface, provides propar message dicts.
@@ -219,17 +214,19 @@ class master(object):
     except:
       raise
 
+	# Store master, to be reused by other instrument instances
     _PROPAR_MASTERS[comport] = self
-    
-    self.comport = comport
 
     # propar message builder
     self.propar_builder = _propar_builder()
-    
+
+    # database
+    self.db = database()
+
     # debug flags
     self.debug_requests = False
-    self.debug          = False    
-    
+    self.debug          = False
+
     # sequence number
     self.seq = 0
     # lock for sequence
