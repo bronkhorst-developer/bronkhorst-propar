@@ -227,6 +227,9 @@ class master(object):
     self.debug_requests = False
     self.debug          = False
 
+	# callback for any propar broadcasts that are received
+    self.broadcast_callback = None
+
     # sequence number
     self.seq = 0
     # lock for sequence
@@ -418,8 +421,24 @@ class master(object):
           else:
             print("Received Unmatched Message:", propar_message)
 
+        # If we dont match, this might be broadcast data
+        if request == None:
+          if propar_message['data'][0] == PP_COMMAND_SEND_PARM_BROADCAST and self.broadcast_callback:
+            try:
+              # Read parameter objects from broadcast message
+              parameters = self.propar_builder.read_pp_send_parameter_message(propar_message)
+			        # Read parameter objects from database (for each parameter in broadcast message)
+              org_parameters = []
+              for recv_parm in parameters:
+                org_parameters.append(self.db.get_propar_parameter(recv_parm['proc_nr'], recv_parm['parm_nr'])[0])
+              # Fix types based on requested types
+              parameters = self.__fix_parameters(org_parameters, parameters)
+              # Call broadcast callback function
+              self.broadcast_callback(parameters)
+            except:
+              pass
         # If we matched to a request
-        if request:
+        else:
           parameters = None
           # A status or error message with callback (write ack)
           if propar_message['data'][0] == PP_COMMAND_STATUS and request['callback'] != None:
