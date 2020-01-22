@@ -1014,19 +1014,18 @@ class _propar_builder(object):
     proc_chained = True
     parm_chained = False
 
+    parameters   = []
+
     while pos < message_len and read_status is PP_STATUS_OK:
 
       parameter = {}
       parameter['data'  ] = None
       parameter['action'] = 'write'
 
-      if proc_chained is False and parm_chained is False:
-        read_status = PP_STATUS_PROTOCOL_ERROR
       if parm_chained is True  and message_len - pos < 1:
         read_status = PP_STATUS_PROTOCOL_ERROR
       if parm_chained is False and message_len - pos < 2:
         read_status = PP_STATUS_PROTOCOL_ERROR
-        
 
       if read_status is PP_STATUS_OK:
         if not parm_chained:
@@ -1100,7 +1099,8 @@ class _propar_builder(object):
       parameter['status'    ] = read_status
       parameter['status_pos'] = pos
 
-      yield parameter
+      parameters.append(parameter)
+    return parameters
 
       
   def read_pp_request_parameter_message(self, propar_message):
