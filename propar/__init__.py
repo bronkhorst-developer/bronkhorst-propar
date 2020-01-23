@@ -1237,9 +1237,7 @@ class _propar_provider(object):
     except:
       raise
  
-	# size of the read performed on the serial port
-    self.serial_read_size = 1
-
+    # External flags / options
     self.debug = debug
     self.dump  = dump
     self.mode  = mode
@@ -1265,6 +1263,7 @@ class _propar_provider(object):
     self.BYTE_STX = 0x02
     self.BYTE_ETX = 0x03
 
+    # internal flags for reader thread
     self.run    = True
     self.paused = False
 
@@ -1298,8 +1297,8 @@ class _propar_provider(object):
       # try-except added to fix issues when we are stopped (comport is closed).
   	  # due to thread, this can cause read to error out.	  
       try:
-        if self.paused == False:
-          serial_data = self.serial.read(self.serial_read_size)
+        if self.paused == False:        
+          serial_data = self.serial.read(self.serial.in_waiting)
           for data_byte in serial_data:
             was_propar_byte = self.__process_propar_byte(data_byte)
             if self.dump != 0:
