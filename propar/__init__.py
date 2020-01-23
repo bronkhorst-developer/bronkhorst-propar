@@ -1303,7 +1303,9 @@ class _propar_provider(object):
             was_propar_byte = self.__process_propar_byte(data_byte)
             if self.dump != 0:
               if self.dump == 2 or was_propar_byte == False:
-                print(received_byte.decode('cp437'), end='', flush=True)
+                print(chr(data_byte), end='')
+          if self.dump != 0:
+            print(end='', flush=True)
         else:
           time.sleep(0.002)
       except:

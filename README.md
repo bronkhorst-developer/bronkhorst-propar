@@ -186,6 +186,10 @@ When propar module data types are used, the module will perform the required con
 
 ## Changelog
 
+### 0.5.1
+
+* Fixed dump mode (broken due to new serial port handling).
+
 ### 0.5.0
 
 * Added support for propar broadcast messages (using ```master.broadcast_callback```).
