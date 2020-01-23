@@ -4,6 +4,9 @@ The Bronkhorst Propar module provides an implementation of a propar master for c
 
 Using the Bronkhorst Propar module it is possible to directly communicate with a single instrument, or to multiple instruments when they are connected to a FLOW-BUS network. The Bronkhorst Propar module communicates directly with the instruments using Python, and does not require tools such as FlowDDE to be installed. Therefore the module is platform independent and has been tested on both Windows and Linux (the module depends on pyserial for serial communication and should work on all platforms that support it).
 
+![](https://www.bronkhorst.com/getmedia/c91cbf1b-7192-4672-8d50-8aa5a7e3afbe/gas-flow.png") ![](https://www.bronkhorst.com/getmedia/3d742400-c9e8-418b-a940-8cb8177a7d57/liquid-flow-uc.png) ![](https://www.bronkhorst.com/getmedia/05212869-5b3f-45ac-ab24-bb1f1d9ccb9e/pressure.png)
+
+
 ## Parameters
 
 For a list of common parameters and the associated functionality available on Bronkhorst instruments, please consult document: [9.17.023 - Operating instructions for digital instruments](https://www.bronkhorst.com/getmedia/ad6a26ef-e33f-4424-b375-21d5811e3b04/917023-Manual-operation-instructions-digital-instruments).
@@ -182,6 +185,13 @@ These types are automatically converted to data types in the propar protocol, wh
 When propar module data types are used, the module will perform the required conversion for the specific data type. When using the readParameter and writeParameter functions, the conversion between database parameter type to the customized parameter type is performed automatically (based on the type, and the minimal specified value).
 
 ## Changelog
+
+### 0.5.0
+
+* Added support for propar broadcast messages (using ```master.broadcast_callback```).
+* Improved database performance upto ~400 times.
+* Data will now be read from serial port in chunks, when there is more data available. This speeds up the processing and keeps buffers clear.
+* Support for unchained multiple parameter propar read messages.
 
 ### 0.4.0
 
