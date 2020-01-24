@@ -1112,7 +1112,12 @@ class _propar_builder(object):
               cnt = pos
               while message[cnt] != 0 and cnt < message_len:
                 cnt += 1
-              parameter['parm_size'] = cnt - pos + 1
+              parameter['parm_size'] = cnt - pos
+              # Data is string + null byte
+              data_size = parameter['parm_size'] + 1
+            else:
+              # Data is string + without null byte
+              data_size = parameter['parm_size']
 
             # Check string length
             if parameter['parm_size'] > slen:
@@ -1128,7 +1133,7 @@ class _propar_builder(object):
                 parameter['data'] = string_bytes
 
             # Increase pos for messsage decoding    
-            pos += parameter['parm_size']
+            pos += data_size
 
       parameter['status'    ] = read_status
       parameter['status_pos'] = pos
