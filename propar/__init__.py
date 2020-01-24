@@ -1,4 +1,4 @@
-__version__ = "0.5.0"
+__version__ = "0.5.1"
 
 import collections
 import os
@@ -1100,24 +1100,34 @@ class _propar_builder(object):
           if (message_len - pos) < 1:
             read_status = PP_ERROR_PROTOCOL_ERROR
           else:
+            # Get string length from message
             parameter['parm_size'] = message[pos]
             pos += 1
+
+            # Max possible length of current string in this message
             slen = message_len - pos
+
+            # Calculate string length (including zero terminator)
             if parameter['parm_size'] == 0:
               cnt = pos
               while message[cnt] != 0 and cnt < message_len:
                 cnt += 1
-              parameter['parm_size'] = cnt - pos              
+              parameter['parm_size'] = cnt - pos + 1
+
+            # Check string length
             if parameter['parm_size'] > slen:
               read_status = PP_ERROR_PROTOCOL_ERROR              
             elif parameter['parm_size'] > MAX_PP_PARM_LEN - 1:
               read_status = PP_STATUS_BUFFER_OVERFLOW              
             else:
+              # Decode string and store data
               string_bytes = bytes(message[pos:pos+parameter['parm_size']])
               try:
                 parameter['data'] = string_bytes.decode('ascii')
               except:
                 parameter['data'] = string_bytes
+
+            # Increase pos for messsage decoding    
             pos += parameter['parm_size']
 
       parameter['status'    ] = read_status
