@@ -1,6 +1,9 @@
 import propar
 import time
 
+print()
+print(propar.__file__)
+
 db = propar.database()
 
 n = 200
@@ -44,3 +47,9 @@ print("{:<50}{:>8}".format("get_propar_parameter for all parmeters"          , '
 print("{:<50}{:>8}".format("get_propar_parameter for one parameter (average)", '{:3.2f}ns'.format((et-bt) / n * 1000000 / len(dde_nrs))))
 
 print()
+
+p = db.get_parameter(8)
+p['test'] = 9
+q = db.get_parameter(8)
+if 'test' in q.keys():
+  print('parameter not copied, but reference, breaking stuff...')

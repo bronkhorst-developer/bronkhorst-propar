@@ -710,14 +710,14 @@ class database(object):
 
   def get_parameter(self, dde_parameter_nr):
     """Get propar parameter object from dde_parameter_nr."""
-    return self.dde_dict[dde_parameter_nr]
+    return dict(self.dde_dict[dde_parameter_nr])
 
   def get_parameters_like(self, like_this):
     """Get propar list of parameters that match the like_this argument.
     Example: like_this = "bus" will return all parameters that contain the string bus somewhere in the LongName field.
     """
     like_this =  like_this.lower().replace(' ', '')
-    parms = [obj for obj in self.dde_dict.values() if like_this in obj['parm_name'].lower().replace(' ', '')]    
+    parms = [dict(obj) for obj in self.dde_dict.values() if like_this in obj['parm_name'].lower().replace(' ', '')]    
     return parms
 
   def get_parameter_values(self, dde_parameter_nr):
