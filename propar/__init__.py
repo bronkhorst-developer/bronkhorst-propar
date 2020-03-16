@@ -350,13 +350,16 @@ class master(object):
         # fix float
         if org_parm['parm_type'] == PP_TYPE_FLOAT and recv_parm['parm_type'] == PP_TYPE_INT32:
           recv_parm['data'] = struct.unpack('f', struct.pack('I', recv_parm['data']))[0]
+          recv_parm['parm_type'] = PP_TYPE_FLOAT
         # fix sint16
-        if org_parm['parm_type'] == PP_TYPE_SINT16 and recv_parm['parm_type'] == PP_TYPE_INT16:
+        elif org_parm['parm_type'] == PP_TYPE_SINT16 and recv_parm['parm_type'] == PP_TYPE_INT16:
           recv_parm['data'] = struct.unpack('h', struct.pack('H', recv_parm['data']))[0]
+          recv_parm['parm_type'] = PP_TYPE_SINT16
         # fix bsint16
-        if org_parm['parm_type'] == PP_TYPE_BSINT16 and recv_parm['parm_type'] == PP_TYPE_INT16:
+        elif org_parm['parm_type'] == PP_TYPE_BSINT16 and recv_parm['parm_type'] == PP_TYPE_INT16:
           if recv_parm['data'] > 0xA3D6: # 41942
             recv_parm['data'] = (0xFFFF - recv_parm['data']) * (-1)
+          recv_parm['parm_type'] = PP_TYPE_BSINT16
         # copy over dde_nr and parm_name when present in org_parm
         if 'dde_nr' in org_parm.keys():
           recv_parm['dde_nr'] = org_parm['dde_nr']
@@ -699,7 +702,7 @@ class database(object):
     return parms
 
   def get_all_parameters(self):
-    return self.dde_dict.values()
+    return [dict(obj) for obj in self.dde_dict.values()]
 
   def get_parameters(self, dde_parameter_nrs):
     """Get propar parameter objects from dde_parameter_nrs."""
@@ -722,13 +725,13 @@ class database(object):
 
   def get_parameter_values(self, dde_parameter_nr):
     """Get list of possible values for given dde parameter number."""
-    rows = [obj for obj in self.parm_vals if int(obj['parameter']) == dde_parameter_nr]
+    rows = [dict(obj) for obj in self.parm_vals if int(obj['parameter']) == dde_parameter_nr]
     return rows
 
   def get_propar_parameter(self, process, parameter):
     """Get propar parameter object for the process parameter combo."""
     try:
-      return self.pp_dict[process][parameter]
+      return [dict(obj) for obj in self.pp_dict[process][parameter]]
     except:
       return None
 

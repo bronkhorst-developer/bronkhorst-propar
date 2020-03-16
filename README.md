@@ -190,6 +190,8 @@ When propar module data types are used, the module will perform the required con
 
 * Fixed dump mode (broken due to new serial port handling).
 * Fixed bug in string handling.
+* Return parameters now contain the requested type when they are custom types (PP_TYPE_FLOAT, PP_TYPE_SINT16, PP_TYPE_BSINT16).
+* Changed database to return copy of dict, so modifcations to a parameter won't influence 'new' request of that parameter.
 
 ### 0.5.0
 
