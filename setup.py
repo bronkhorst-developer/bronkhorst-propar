@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="bronkhorst_propar",
-    version="0.5.1",
+    version="0.5.2",
     author="Bronkhorst",
     author_email="support@bronkhorst.com",
     description="Communicate to Bronkhorst Instruments using the Propar protocol over RS232 or RS485.",
