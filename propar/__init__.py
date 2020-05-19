@@ -1,4 +1,4 @@
-__version__ = "0.5.1"
+__version__ = "0.5.2"
 
 import collections
 import os
@@ -122,11 +122,28 @@ class instrument(object):
   def __init__(self, comport, address=0x80, baudrate=38400):
     """Create our master (or use existing)."""
     self.address = address
+    self.comport = comport
     if comport in _PROPAR_MASTERS:
-      self.master = _PROPAR_MASTERS[comport]
+      # Master already created previously
+      self.master  = _PROPAR_MASTERS[comport]['master']      
+      # If usage count is 0, the master is stopped, so start it.
+      if _PROPAR_MASTERS[comport]['usage_count'] == 0:
+        _PROPAR_MASTERS[comport]['master'].start()
+      # Increase usage count
+      _PROPAR_MASTERS[comport]['usage_count'] += 1
     else: 
-      self.master = master(comport, baudrate)      
+      # No master, create it
+      self.master = master(comport, baudrate)
+  	  # Store master, to be reused by other instrument instances
+      _PROPAR_MASTERS[comport] = {'master': self.master, 'usage_count': 1}
     self.db = self.master.db
+    
+  def __del__(self):
+    """Delete ourself, and stop master when usage count is 0."""
+    comport = self.comport
+    _PROPAR_MASTERS[comport]['usage_count'] -= 1
+    if _PROPAR_MASTERS[comport]['usage_count'] == 0:
+      _PROPAR_MASTERS[comport]['master'].stop()
 
   def readParameter(self, dde_nr):
     """Reads parameter from FlowDDE Nr from this instrument."""
@@ -213,9 +230,6 @@ class master(object):
       self.propar = _propar_provider(baudrate, comport)
     except:
       raise
-
-	# Store master, to be reused by other instrument instances
-    _PROPAR_MASTERS[comport] = self
 
     # propar message builder
     self.propar_builder = _propar_builder()
@@ -1315,13 +1329,16 @@ class _propar_provider(object):
       # try-except added to fix issues when we are stopped (comport is closed).
   	  # due to thread, this can cause read to error out.	  
       try:
-        if self.paused == False:        
-          serial_data = self.serial.read(self.serial.in_waiting)
-          for data_byte in serial_data:
-            was_propar_byte = self.__process_propar_byte(data_byte)
-            if self.dump != 0:
-              if self.dump == 2 or was_propar_byte == False:
-                print(chr(data_byte), end='')
+        if self.paused == False:
+          if self.serial.in_waiting:
+            serial_data = self.serial.read(self.serial.in_waiting)
+            for data_byte in serial_data:
+              was_propar_byte = self.__process_propar_byte(data_byte)
+              if self.dump != 0:
+                if self.dump == 2 or was_propar_byte == False:
+                  print(chr(data_byte), end='')
+          else:
+            time.sleep(0.001)
           if self.dump != 0:
             print(end='', flush=True)
         else:
