@@ -27,8 +27,9 @@ dut.master.broadcast_callback = broadcast_receive
 # Start the dump / broadcast
 dut.writeParameter(7, 64)
 dut.writeParameter(328, 460800)
-dut.writeParameter(104, 1)
 dut.master.set_baudrate(460800)
+time.sleep(1)
+dut.writeParameter(104, 1)
 
 # get parameter object for setpoint, we need this to call write_parameters, where we can write without ack
 parm_setpoint = dut.db.get_parameter(9)
