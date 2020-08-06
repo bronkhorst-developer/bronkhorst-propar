@@ -1,4 +1,4 @@
-__version__ = "0.5.2"
+__version__ = "0.5.3"
 
 import collections
 import os
@@ -141,9 +141,12 @@ class instrument(object):
   def __del__(self):
     """Delete ourself, and stop master when usage count is 0."""
     comport = self.comport
-    _PROPAR_MASTERS[comport]['usage_count'] -= 1
-    if _PROPAR_MASTERS[comport]['usage_count'] == 0:
-      _PROPAR_MASTERS[comport]['master'].stop()
+    try:
+      _PROPAR_MASTERS[comport]['usage_count'] -= 1
+      if _PROPAR_MASTERS[comport]['usage_count'] == 0:
+        _PROPAR_MASTERS[comport]['master'].stop()
+    except:
+      pass
 
   def readParameter(self, dde_nr):
     """Reads parameter from FlowDDE Nr from this instrument."""
@@ -241,8 +244,8 @@ class master(object):
     self.debug_requests = False
     self.debug          = False
 
-	# callback for any propar broadcasts that are received
-    self.broadcast_callback = None
+  	# callback for any propar broadcasts that are received
+    self.broadcast_callback = self.__dummy_callback
 
     # sequence number
     self.seq = 0
@@ -260,6 +263,9 @@ class master(object):
     self.msg_handler_thread = threading.Thread(target=self.__message_handler_task, args=())
     self.msg_handler_thread.daemon = True
     self.msg_handler_thread.start()    
+
+  def __dummy_callback(self, dummy):
+    pass
 
   def set_baudrate(self, baudrate):
     """Set the baudrate used for communication."""
@@ -588,41 +594,16 @@ class master(object):
       
   def write_parameters(self, parameters, command=PP_COMMAND_SEND_PARM_WITH_ACK, callback=None):  
     """Write parameters from provided parmeters list"""
-    write_message = {}    
+    write_message = {}   
     
-    # handles proc/parm_index fields (which equal proc/parm_nr) and sets chaining flags
-    prev_proc = -1
-    multiple_parameters = False    
-    parm_cnt = len(parameters)    
-    for parameter in parameters:    
-      if prev_proc == -1:
-        prev_proc = parameter['proc_nr']     
-      if prev_proc != parameter['proc_nr']:
-        multiple_parameters = True    
-    prev_proc = -1        
-    for i in range(0, parm_cnt):      
-      if 'parm_size' not in parameters[i]:
-        parameters[i]['parm_size'] = self.__get_size(parameters[i]['parm_type'])      
-      parameters[i]['proc_index'] = parameters[i]['proc_nr']
-      parameters[i]['parm_index'] = parameters[i]['parm_nr']      
-      parameters[i]['proc_chained'] = True
-      parameters[i]['parm_chained'] = False        
-      parm_cnt -= 1      
-      if prev_proc == -1:
-        prev_proc = parameters[i]['proc_nr']    
-        parameters[i]['proc_chained'] = multiple_parameters
-        if i+1 <= parm_cnt and parameters[i]['proc_nr'] != parameters[i+1]['proc_nr']:
-          parameters[i]['parm_chained'] = False
-        else:
-          parameters[i]['parm_chained'] = True        
-      if prev_proc != parameters[i]['proc_nr']:
-        prev_proc = parameters[i]['proc_nr']
-        parameters[i]['proc_chained'] = True
-        parameters[i]['parm_chained'] = False        
-      if parm_cnt == 0:
-        parameters[i]['proc_chained'] = False
-        parameters[i]['parm_chained'] = False          
-    
+    # Add parm_size (from type) and add proc_index and parm_index (= proc_nr and parm_nr)
+    for parameter in parameters:
+      if 'parm_size' not in parameter:
+        parameter['parm_size'] = self.__get_size(parameter['parm_type'])      
+      parameter['proc_index'] = parameter['proc_nr']
+      parameter['parm_index'] = parameter['parm_nr']
+
+    # Setup the final fields, and build the message.
     write_message['node'] = parameters[0]['node']
     write_message['seq' ] = self.__next_seq()    
     write_message = self.propar_builder.build_pp_send_parameter_message(write_message, parameters, command)
@@ -793,8 +774,24 @@ class _propar_builder(object):
     return response_message    
     
 
-  def build_pp_send_parameter_message(self, propar_message, parameters, command = None, force_chaining = True):
-    """Build propar write message from input parameters"""
+  def build_pp_send_parameter_message(self, propar_message, parameters, command = None):
+    """Build propar write message from input parameters"""    
+
+    # Preprocess parameters to setup all the required fields for chaining.
+    f = 0  # First of the current process
+    for i in range(len(parameters)):      
+      # Start with no flags set
+      parameters[i]['proc_chained'] = False
+      parameters[i]['parm_chained'] = False
+      # Parameter Chaining (set previous, based on current)
+      if i != 0:
+        if parameters[i]['proc_nr'] == parameters[i - 1]['proc_nr']:
+          parameters[i - 1]['parm_chained'] = True
+        else:
+          parameters[i - 1]['parm_chained'] = False      
+          parameters[f    ]['proc_chained'] = True
+          f = i
+
     send_message = {}
     send_message['seq' ] = propar_message['seq' ]
     send_message['node'] = propar_message['node']
@@ -842,26 +839,24 @@ class _propar_builder(object):
           message[0] = command
           pos += 1
 
-        if force_chaining:
-          if pos == 1:
-            prev_parm_chained = False
+        proc_index   = parameter['proc_index']
+        parm_index   = parameter['parm_index']
+        proc_chained = parameter['proc_chained']
+        parm_chained = parameter['parm_chained']
 
-          proc_index        = parameter['proc_index']
-          parm_index        = parameter['parm_index']
-          parm_chained      = prev_parm_chained
-          prev_parm_chained = parameter['parm_chained']
+        if parameter['proc_chained']:
+          proc_index = proc_index | 0x80
 
-          if parameter['proc_chained']:
-            proc_index = proc_index | 0x80
-
-          if parameter['parm_chained']:
-            parm_index = parm_index | 0x80
-
+        if parameter['parm_chained']:
+          parm_index = parm_index | 0x80
 
         if (parm_chained and (max_message_len - pos) >= 2) or (not parm_chained and (max_message_len - pos) >= 3):
-          if not parm_chained:
+
+          if prev_parm_chained == False:
             message[pos] = proc_index
             pos += 1
+            
+          prev_parm_chained = parameter['parm_chained']
             
           message[pos] = parm_index | parameter['parm_type']
           pos += 1
@@ -1140,7 +1135,9 @@ class _propar_builder(object):
             if parameter['parm_size'] > slen:
               read_status = PP_ERROR_PROTOCOL_ERROR              
             elif parameter['parm_size'] > MAX_PP_PARM_LEN - 1:
-              read_status = PP_STATUS_BUFFER_OVERFLOW              
+              # Decode string and store data
+              string_bytes = bytes(message[pos:pos+parameter['parm_size']])
+              parameter['data'] = string_bytes
             else:
               # Decode string and store data
               string_bytes = bytes(message[pos:pos+parameter['parm_size']])

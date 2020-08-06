@@ -185,6 +185,11 @@ When propar module data types are used, the module will perform the required con
 
 ## Changelog
 
+### 0.5.3
+
+* Fix issues with write chaining.
+* Support receiving strings that exceed MAX_PP_PARM_LEN (for IFI data dump mode).
+
 ### 0.5.2
 
 * Add IP Address parameters to database.
