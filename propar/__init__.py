@@ -117,10 +117,25 @@ _PROPAR_MASTERS = {}
 
 
 class instrument(object):
-  """Implements a propar instrument (wrapper around master, with address and additional functions)."""
+  """Implements a propar instrument for easy access to instrument parameters. 
+  
+  The instrument class wraps around a master instance, which is created for the given comport.
+  Multiple instruments with the same comport use the same master. 
+  
+  Args:
+    comport (str): COM port on which the instrument is connected (e.g. 'COM1' or '/dev/ttyUSB0').
+    address (int, optional): Address of the instrument, default = 128 for local instrument.
+    baudrate (int, optional): Baudrate to use for communication.
+    serial_class (obj, optional): Custom serial class to be used for serial communication with the instrument.
+
+  Attributes:
+    address (int): Address of the instrument
+    comport (str): COM port on which the instrument is connected
+    master (obj): Instance of the master class used for communication.
+    db (obj): Instance of the propar database, for conversion from DDE number to process, parameter number.
+  """
 
   def __init__(self, comport, address=0x80, baudrate=38400, serial_class=serial.Serial):
-    """Create our master (or use existing)."""
     self.address = address
     self.comport = comport
     if comport in _PROPAR_MASTERS:    
@@ -133,7 +148,14 @@ class instrument(object):
     self.db = self.master.db
 
   def readParameter(self, dde_nr):
-    """Reads parameter from FlowDDE Nr from this instrument."""
+    """Read a single parameter indicated by DDE nr.
+
+    Args:
+      dde_nr (int): FlowDDE parameter number.
+
+    Returns:
+      Parameter data if successful, None otherwise.
+    """
     try:
       parm = self.db.get_parameter(dde_nr)
     except:
@@ -146,7 +168,15 @@ class instrument(object):
       return None
 
   def writeParameter(self, dde_nr, data):
-    """Write parameter by FlowDDE Nr to this instrument."""
+    """Write a single parameter indicated by DDE nr.
+
+    Args:
+      dde_nr (int): FlowDDE parameter number.
+      data: Parameter data to write.
+
+    Returns:
+      True if successful, False otherwise.
+    """
     try:
       parm = self.db.get_parameter(dde_nr)
     except:
@@ -156,62 +186,130 @@ class instrument(object):
     return (resp == PP_STATUS_OK)
 
   def read_parameters(self, parameters):
-    """Read list of parameter objects from this instrument."""
+    """Read multiple parameters.
+    
+    Args:
+      parameters: List of parameter objects.
+      
+    Returns:
+      List with parameters with data if successful, list with one status item otherwise.
+    """
     parameters[0]['node'] = self.address
     return self.master.read_parameters(parameters)
 
   def write_parameters(self, parameters, command=PP_COMMAND_SEND_PARM_WITH_ACK):
-    """Write list of parameter objects to this instrument."""
+    """Write multiple parameters.
+    
+    Args:
+      parameters: List of parameter objects, with data.
+      command (int, optional): Propar command to use for writing.
+
+    Returns:
+      Propar status code (0 if successful).
+    """
     parameters[0]['node'] = self.address
     return self.master.write_parameters(parameters, command)
 
-  def read(self, process, parameter, type):
-    """Read single parameter from this instrument."""
-    return self.master.read(self.address, process, parameter, type)
+  def read(self, proc_nr, parm_nr, parm_type):
+    """Read a single parameter.
+    
+    Args:
+      proc_nr (int): process number.
+      parm_nr (int): parameter number.
+      parm_type (int): parameter type.
 
-  def write(self, process, parameter, type, data):
-    """Write single parameter to this instrument."""
-    return self.master.write(self.address, process, parameter, type, data)
+    Returns:
+      Parameter value if successful, None otherwise.
+    """
+    return self.master.read(self.address, proc_nr, parm_nr, parm_type)
+
+  def write(self, proc_nr, parm_nr, parm_type, data):
+    """Write a single parameter.
+    
+    Args:
+      proc_nr (int): process number.
+      parm_nr (int): parameter number.
+      parm_type (int): parameter type.
+      data: parameter data.
+
+    Returns:
+      True if successful, False otherwise.
+    """
+    return self.master.write(self.address, proc_nr, parm_nr, parm_type, data)
   
   def wink(self, time=9):
-    """Wink the LEDs on the instrument."""
+    """Wink the LEDs on the instrument.
+    
+    Args:
+      time (int, optional): Wink duration 1-9 seconds.    
+
+    Returns:
+      True if successful, False otherwise.
+    """
     time_char = bytes([0x30+time]).decode('ascii')
     return self.write(0, 0, PP_TYPE_STRING, time_char)
 
   @property
   def setpoint(self):
-    """Reads and returns the setpoint of the instrument."""
+    """Reads the setpoint of the instrument (0-32000 = 0-100%).
+    
+    Returns:
+      Instrument setpoint if successful, None otherwise.
+    """
     self._setpoint = self.read(1, 1, PP_TYPE_INT16)
     return self._setpoint
 
   @setpoint.setter
   def setpoint(self, value):
-    """Sets the setpoint of the instrument."""
+    """Sets the setpoint of the instrument (0-32000 = 0-100%).
+
+    Returns:
+      True if successful, False otherwise.
+    """
     return self.write(1, 1, PP_TYPE_INT16, value)
 
   @property
   def measure(self):
-    """Reads and returns the measure of the instrument."""
+    """Reads the measure of the instrument (0-32000 = 0-100%).
+    
+    Returns:
+      Instrument measure if successful, None otherwise.
+    """
     measure = self.read(1, 0, PP_TYPE_BSINT16)
     return measure
 
   @property
   def id(self):
-    """Reads and returns the id parameter of the instrument."""
+    """Reads the ID parameter of the instrument.
+    
+    Returns:
+      Instrument ID if successful, None otherwise.
+    """
     return self.read(0, 0, PP_TYPE_STRING)
 
         
 
 
 class master(object):
-  """Implements a propar master"""
+  """Implements a propar master for communication with Bronkhorst instruments. 
+  
+    After initializing this can be used to read/write parameters of an instrument. 
+    When local host functionality is used (MBC with flowbus), it is also possible to 
+    communicate with other nodes on the network.
+  
+  Args:
+    comport (str): COM port on which the instrument is connected (e.g. 'COM1' or '/dev/ttyUSB0').
+    baudrate (int, optional): Baudrate to use for communication.
+    serial_class (obj, optional): Custom serial class to be used for serial communication with the instrument.
+
+  Attributes:
+    address (int): Address of the instrument
+    comport (str): COM port on which the instrument is connected
+    master (obj): Instance of the master class used for communication.
+    db (obj): Instance of the propar database, for conversion from DDE number to process, parameter number.
+  """
 
   def __init__(self, comport, baudrate, serial_class=serial.Serial):
-    """Implements a propar master device. After initializing this can
-    be used to read/write parameters of an instrument. When local host functionality
-    is used (MBC with flowbus), it is also possible to communicate with other
-    nodes on the network.
-    """
     try:
       # serial propar interface, provides propar message dicts.
       self.propar = _propar_provider(baudrate, comport, serial_class=serial_class)
@@ -252,23 +350,44 @@ class master(object):
     pass
 
   def set_baudrate(self, baudrate):
-    """Set the baudrate used for communication."""
+    """Set the baudrate used for communication.
+    
+    Args:
+      baudrate (int): New baudrate.
+    """
     self.propar.set_baudrate(baudrate)
 
   def dump(self, level=1): 
-    """Enable printing of all serial data to the console."""
+    """Set dump level for debug purposes.
+
+    Dump level 0 = Disable.
+    Dump level 1 = Print non-propar communication to console.
+    Dump level 2 = Print all communication to console.
+    
+    Args:
+      level (int): New dump level.
+    """
     self.propar.dump = level
   
   def stop(self): 
-    """Disconnect the comport of the provider."""
+    """Disconnect the comport."""
     self.propar.stop()
     
   def start(self): 
-    """Reconnect the comport of the provider."""
+    """Reconnect the comport."""
     self.propar.start()
   
   def get_nodes(self, find_first=True):
-    """Get nodes on the network. Will scan from 1 to local address to find the first node!""" 
+    """Get a list of nodes on the network. 
+    
+    Will scan from 1 to local address to find the first node!
+    
+    Args:
+      find_first (bool, optional): Scan from 1 to local address to find node.
+
+    Returns:
+      List with information about the instruments on the network.
+    """ 
     scan_address  = 0x80  
     found_nodes   = []
     loop_detected = False
@@ -494,35 +613,66 @@ class master(object):
       return 0
       
       
-  def read(self, node, process, parameter, type):
-    """Read parameter from input arguments"""
+  def read(self, address, proc_nr, parm_nr, parm_type):
+    """Read a single parameter.
+    
+    Args:
+      address (int): instrument node address.
+      proc_nr (int): process number.
+      parm_nr (int): parameter number.
+      parm_type (int): parameter type.
+
+    Returns:
+      Parameter value if successful, None otherwise.
+    """
     parm = {}
-    parm['node'     ] = node
-    parm['proc_nr'  ] = process
-    parm['parm_nr'  ] = parameter
-    parm['parm_type'] = type
+    parm['node'     ] = address
+    parm['proc_nr'  ] = proc_nr
+    parm['parm_nr'  ] = parm_nr
+    parm['parm_type'] = parm_type
     resp = self.read_parameters([parm])    
     if resp:
       for r in resp:
         return r['data']
     else:
       return None
-  
-  
-  def write(self, node, process, parameter, type, data):
-    """Write parameter from input arguments"""
+
+  def write(self, address, proc_nr, parm_nr, parm_type, data):
+    """Write a single parameter.
+    
+    Args:
+      address (int): instrument node address.
+      proc_nr (int): process number.
+      parm_nr (int): parameter number.
+      parm_type (int): parameter type.
+      data: parameter data.
+
+    Returns:
+      True if successful, False otherwise.
+    """
     parm = {}
-    parm['node'     ] = node
-    parm['proc_nr'  ] = process
-    parm['parm_nr'  ] = parameter
-    parm['parm_type'] = type
+    parm['node'     ] = address
+    parm['proc_nr'  ] = proc_nr
+    parm['parm_nr'  ] = parm_nr
+    parm['parm_type'] = parm_type
     parm['data'     ] = data
     resp = self.write_parameters([parm])
     return resp == PP_STATUS_OK    
       
       
   def read_parameters(self, parameters, callback=None):  
-    """Read parameters from provided parmeters list"""
+    """Read multiple parameters.
+    
+    From a list of parameter objects.
+
+    Args:
+      parameters (list): List of parameter objects to read.
+      callback (func, optional): Function to call when parameters are received (parameters passed in callback).
+
+    Returns:
+      List with parameters with data if successful, list with one status item otherwise.
+      When callback is used this will return None.
+    """
     request_message = {}    
     
     # Add parm_size (from type) and add proc_index and parm_index (= proc_nr and parm_nr)
@@ -577,7 +727,16 @@ class master(object):
           
       
   def write_parameters(self, parameters, command=PP_COMMAND_SEND_PARM_WITH_ACK, callback=None):  
-    """Write parameters from provided parmeters list"""
+    """Write multiple parameters.
+    
+    Args:
+      parameters: List of parameter objects, with data.
+      command (int, optional): Propar command to use for writing.
+      callback (func, optional): Function to call when parameters are received (parameters passed in callback).
+
+    Returns:
+      Propar status code (0 if successful, or callback is used).
+    """
     write_message = {}   
     
     # Add parm_size (from type) and add proc_index and parm_index (= proc_nr and parm_nr)
@@ -626,9 +785,15 @@ class master(object):
 
 
 class database(object):
+  """The database class is used to convert FlowDDE numbers to propar parameter objects.
+  
+    Several other supporting functions are also provided for manual use.
+  
+  Args:
+    database_path (str, optional): Use a custom database json file.
+  """
 
   def __init__(self, database_path=None):
-    """This class can be used to read data from the parameters.json database file (generated from FlowDDE.mdb)."""
     #Columns:
     #Parameter	LongName	Name	Available	Group0	Group1	Group2	Process	FBnr	VarType	VarType2	VarLength	Min	Max	Read	Write	Poll	Advanced	Secured	Highly secured	Default	Description
     if database_path == None:
@@ -681,41 +846,83 @@ class database(object):
     return parms
 
   def get_all_parameters(self):
+    """Get a list containing all known parameter objects."""
     return [dict(obj) for obj in self.dde_dict.values()]
 
   def get_parameters(self, dde_parameter_nrs):
-    """Get propar parameter objects from dde_parameter_nrs."""
+    """Get propar parameter objects from a list of DDE nrs.
+    
+    Args:
+      dde_parameter_nrs (list:int): List of DDE nrs.
+
+    Returns:
+      A list of corresponding propar parameter objects.
+    """
     parms = []
     for dde_nr in dde_parameter_nrs:
       parms.append(self.get_parameter(dde_nr))
     return parms
 
   def get_parameter(self, dde_parameter_nr):
-    """Get propar parameter object from dde_parameter_nr."""
+    """Get a propar parameter object for the given DDE nrs.
+    
+    Args:
+      dde_parameter_nr (int): DDE nrs.
+
+    Returns:
+      A propar parameter object.
+    """
     return dict(self.dde_dict[dde_parameter_nr])
 
   def get_parameters_like(self, like_this):
-    """Get propar list of parameters that match the like_this argument.
-    Example: like_this = "bus" will return all parameters that contain the string bus somewhere in the LongName field.
+    """Get a list of propar parameter objects that match the like_this argument.
+    
+    Args:
+      like_this (str): String to find in parameter name.
+
+    Returns:
+      A list of matching propar parameter objects.
     """
     like_this =  like_this.lower().replace(' ', '')
     parms = [dict(obj) for obj in self.dde_dict.values() if like_this in obj['parm_name'].lower().replace(' ', '')]    
     return parms
 
   def get_parameter_values(self, dde_parameter_nr):
-    """Get list of possible values for given dde parameter number."""
+    """Get a list of possible values for for the given DDE nr..
+    
+    Args:
+      dde_parameter_nr (int): DDE nr.
+
+    Returns:
+      A list with possible values.
+    """
     rows = [dict(obj) for obj in self.parm_vals if int(obj['parameter']) == dde_parameter_nr]
     return rows
 
-  def get_propar_parameter(self, process, parameter):
-    """Get propar parameter object for the process parameter combo."""
+  def get_propar_parameter(self, proc_nr, parm_nr):
+    """Get a list of possible propar parameter objects for the given process, parameter number combination.
+    
+    Args:
+      proc_nr (int): Process number.
+      parm_nr (int): Parameter number.
+
+    Returns:
+      A list with propar parameter objects.
+    """
     try:
-      return [dict(obj) for obj in self.pp_dict[process][parameter]]
+      return [dict(obj) for obj in self.pp_dict[proc_nr][parm_nr]]
     except:
       return None
 
   def get_propar_parameters(self, process):
-    """Get propar parameter object for the given process."""
+    """Get a list of possible propar parameter objects for the given process.
+    
+    Args:
+      proc_nr (int): Process number.
+
+    Returns:
+      A list with processes, with a list of propar parameter objects per process.
+    """
     try:
       return self.pp_dict[process]
     except:

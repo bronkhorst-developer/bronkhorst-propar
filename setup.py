@@ -1,15 +1,17 @@
 import setuptools
 
-with open("README.md", "r") as fh:
-    long_description = fh.read()
-
 setuptools.setup(
     name="bronkhorst_propar",
     version="0.5.4",
     author="Bronkhorst",
     author_email="support@bronkhorst.com",
     description="Communicate to Bronkhorst Instruments using the Propar protocol over RS232 or RS485.",
-    long_description=long_description,
+    long_description="""
+The Bronkhorst Propar module provides communication with Bronkhorst (Mass) Flow Meters and Controllers using the default RS232/RS485 interface.
+
+Documentation: https://bronkhorst-propar.readthedocs.io/en/latest/
+Download Page: https://pypi.org/project/bronkhorst-propar
+""",
     long_description_content_type="text/markdown",
     packages=setuptools.find_packages(),
     classifiers=[
