@@ -1,4 +1,4 @@
-__version__ = "0.5.3"
+__version__ = "0.5.4"
 
 import collections
 import os
@@ -119,34 +119,18 @@ _PROPAR_MASTERS = {}
 class instrument(object):
   """Implements a propar instrument (wrapper around master, with address and additional functions)."""
 
-  def __init__(self, comport, address=0x80, baudrate=38400):
+  def __init__(self, comport, address=0x80, baudrate=38400, serial_class=serial.Serial):
     """Create our master (or use existing)."""
     self.address = address
     self.comport = comport
-    if comport in _PROPAR_MASTERS:
+    if comport in _PROPAR_MASTERS:    
       # Master already created previously
-      self.master  = _PROPAR_MASTERS[comport]['master']      
-      # If usage count is 0, the master is stopped, so start it.
-      if _PROPAR_MASTERS[comport]['usage_count'] == 0:
-        _PROPAR_MASTERS[comport]['master'].start()
-      # Increase usage count
-      _PROPAR_MASTERS[comport]['usage_count'] += 1
+      self.master = _PROPAR_MASTERS[comport]
     else: 
-      # No master, create it
-      self.master = master(comport, baudrate)
-  	  # Store master, to be reused by other instrument instances
-      _PROPAR_MASTERS[comport] = {'master': self.master, 'usage_count': 1}
+      # No master, create it and store it
+      self.master = master(comport, baudrate, serial_class=serial_class)
+      _PROPAR_MASTERS[comport] = self.master
     self.db = self.master.db
-    
-  def __del__(self):
-    """Delete ourself, and stop master when usage count is 0."""
-    comport = self.comport
-    try:
-      _PROPAR_MASTERS[comport]['usage_count'] -= 1
-      if _PROPAR_MASTERS[comport]['usage_count'] == 0:
-        _PROPAR_MASTERS[comport]['master'].stop()
-    except:
-      pass
 
   def readParameter(self, dde_nr):
     """Reads parameter from FlowDDE Nr from this instrument."""
@@ -222,7 +206,7 @@ class instrument(object):
 class master(object):
   """Implements a propar master"""
 
-  def __init__(self, comport, baudrate):
+  def __init__(self, comport, baudrate, serial_class=serial.Serial):
     """Implements a propar master device. After initializing this can
     be used to read/write parameters of an instrument. When local host functionality
     is used (MBC with flowbus), it is also possible to communicate with other
@@ -230,7 +214,7 @@ class master(object):
     """
     try:
       # serial propar interface, provides propar message dicts.
-      self.propar = _propar_provider(baudrate, comport)
+      self.propar = _propar_provider(baudrate, comport, serial_class=serial_class)
     except:
       raise
 
@@ -814,18 +798,18 @@ class _propar_builder(object):
     for parameter in parameters:
       values_ok = False
 
-      org_type = parameter['parm_type']
-      if parameter['parm_type'] == PP_TYPE_FLOAT:
-        parameter['parm_type'] = PP_TYPE_INT32
-
-      if parameter['parm_type'] in [PP_TYPE_SINT16, PP_TYPE_BSINT16]:
-        parameter['parm_type'] = PP_TYPE_INT16
+      if   parameter['parm_type'] == PP_TYPE_FLOAT:
+        parm_type = PP_TYPE_INT32
+      elif parameter['parm_type'] in [PP_TYPE_SINT16, PP_TYPE_BSINT16]:
+        parm_type = PP_TYPE_INT16
+      else:
+        parm_type = parameter['parm_type']
 
       if(
-          parameter['proc_nr']            <= 0x7F            and
-          parameter['parm_nr']            <= 0x1F            and
-          (parameter['parm_type'] & 0x9F) == 0x00            and
-          parameter['parm_size']          < MAX_PP_PARM_LEN
+          parameter['proc_nr']   <= 0x7F            and
+          parameter['parm_nr']   <= 0x1F            and
+          (parm_type & 0x9F)     == 0x00            and
+          parameter['parm_size'] <  MAX_PP_PARM_LEN
         ):
         if(
             command == PP_COMMAND_SEND_PARM_WITH_ACK or
@@ -858,10 +842,10 @@ class _propar_builder(object):
             
           prev_parm_chained = parameter['parm_chained']
             
-          message[pos] = parm_index | parameter['parm_type']
+          message[pos] = parm_index | parm_type
           pos += 1
 
-          if parameter['parm_type'] == PP_TYPE_INT8:
+          if parm_type == PP_TYPE_INT8:
             if (max_message_len - pos) >= 1:
               if isinstance(parameter['data'], bytes):
                 message[pos] = parameter['data'][0]
@@ -869,7 +853,7 @@ class _propar_builder(object):
                 message[pos] = parameter['data']
               pos += 1
 
-          if parameter['parm_type'] == PP_TYPE_INT16:
+          if parm_type == PP_TYPE_INT16:
             if (max_message_len - pos) >= 2:
               try:
                 data = struct.unpack('2B', struct.pack('h', parameter['data']))
@@ -882,9 +866,9 @@ class _propar_builder(object):
                 message[pos] = byte
                 pos += 1
 
-          if parameter['parm_type'] == PP_TYPE_INT32:
+          if parm_type == PP_TYPE_INT32:
             if (max_message_len - pos) >= 4:
-              if isinstance(parameter['data'], float) or org_type == PP_TYPE_FLOAT:
+              if parameter['parm_type'] == PP_TYPE_FLOAT:
                 try:
                   data = struct.unpack('4B', struct.pack('f', parameter['data'])) 
                 except:
@@ -901,7 +885,7 @@ class _propar_builder(object):
                 message[pos] = byte
                 pos += 1
 
-          if parameter['parm_type'] == PP_TYPE_STRING:
+          if parm_type == PP_TYPE_STRING:
             if (max_message_len - pos) >= 1:
               len_pos = pos
               pos += 1
@@ -956,26 +940,24 @@ class _propar_builder(object):
     for parameter in parameters:
       
       parm_chained = False
-      
-      parameter_parm_type = parameter['parm_type']
-        
-      if parameter['parm_type'] == PP_TYPE_FLOAT:
-        parameter_parm_type = PP_TYPE_INT32
-        
-      if parameter['parm_type'] in [PP_TYPE_SINT16, PP_TYPE_BSINT16]:
-        parameter_parm_type = PP_TYPE_INT16
-        
-      # change this as well.
+              
+      if   parameter['parm_type'] == PP_TYPE_FLOAT:
+        parm_type = PP_TYPE_INT32        
+      elif parameter['parm_type'] in [PP_TYPE_SINT16, PP_TYPE_BSINT16]:
+        parm_type = PP_TYPE_INT16
+      else:
+        parm_type = parameter['parm_type']
+
       if request_message['node'] is None:
         request_message['node'] = parameter['node']
       
-      if(pos                          <  max_message_len      and
-         parameter['proc_nr']         <= 0x7F                 and
-         parameter['proc_index']      <= 0x7F                 and
-         parameter['parm_nr']         <= 0x1F                 and
-         parameter['parm_index']      <= 0x1F                 and
-         (parameter_parm_type & 0x9F) == 0x00                 and
-         parameter['parm_size']       <  MAX_PP_PARM_LEN         ):
+      if(pos                     <  max_message_len      and
+         parameter['proc_nr']    <= 0x7F                 and
+         parameter['proc_index'] <= 0x7F                 and
+         parameter['parm_nr']    <= 0x1F                 and
+         parameter['parm_index'] <= 0x1F                 and
+         (parm_type & 0x9F)      == 0x00                 and
+         parameter['parm_size']  <  MAX_PP_PARM_LEN         ):
          
         if pos == 0:
           message[pos] = PP_COMMAND_REQUEST_PARM
@@ -1004,15 +986,15 @@ class _propar_builder(object):
             message[pos] = parameter['proc_index']
             pos += 1
 
-          message[pos] = parameter['parm_index'] | parameter_parm_type
+          message[pos] = parameter['parm_index'] | parm_type
           pos += 1
 
           message[pos] = parameter['proc_nr']
           pos += 1
-          message[pos] = parameter['parm_nr'] | parameter_parm_type
+          message[pos] = parameter['parm_nr'] | parm_type
           pos += 1
 
-          if(parameter_parm_type == PP_TYPE_STRING):
+          if(parm_type == PP_TYPE_STRING):
             if((max_message_len - pos) >= 1):
               message[pos] = parameter['parm_size']
               pos += 1
@@ -1245,7 +1227,7 @@ class _propar_builder(object):
 class _propar_provider(object):
   """Implements the propar interface for master or slave"""
 
-  def __init__(self, baudrate, comport, debug=False, dump=0, mode=PP_MODE_BINARY):
+  def __init__(self, baudrate, comport, debug=False, dump=0, mode=PP_MODE_BINARY, serial_class=serial.Serial):
     """Implements the propar interface for the propar_slave/master class.
     Creates a serial connection that reads binary propar messages into a queue.
     The connection can also write messages to the serial connection.
@@ -1262,7 +1244,7 @@ class _propar_provider(object):
     dump 2 = dump all
     """
     try:
-      self.serial = serial.Serial(comport, baudrate, timeout=0.01, write_timeout=0, xonxoff=False, rtscts=False, dsrdtr=False)
+      self.serial = serial_class(comport, baudrate, timeout=0.01, write_timeout=0)
     except:
       raise
  

@@ -2,7 +2,7 @@ import propar
 import time
 import random 
 
-dut = propar.instrument('com5', baudrate=460800)
+dut = propar.instrument('com1')
 
 print()
 print("Testing using propar @", propar.__file__)

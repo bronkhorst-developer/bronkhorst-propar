@@ -1,6 +1,6 @@
 import propar
 
-dut = propar.instrument('com5')
+dut = propar.instrument('com1')
 
 parms = [p for p in dut.db.get_all_parameters() if p['parm_type'] == propar.PP_TYPE_STRING]
 

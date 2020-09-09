@@ -162,14 +162,53 @@ setpoint = db.get_parameter(8)
 valve_parameters = db.get_parameters_like('valve')
 ```
 
+To use a custom serial data provider (instead of pySerial), the serial_class can be passed to the instrument and master classes.
+
+```python
+# Import the propar module
+import propar
+
+# A dummy serial port class with the required functions and attributes.
+class dummy_serial():
+
+  def __init__(self, port, baudrate, **kwargs):
+    # Initialize the port, port and baudrate can be controlled
+    # in instrument and master initialization.
+    print(port, baudrate)
+
+  def close(self):
+    # Close the port
+    print('close')
+
+  def open(self):
+    # Open the port
+    print('open')
+
+  def read(self, size=1):
+    # Read data from port, return bytes object
+    return b'dummy'
+
+  def write(self, data):
+    # Write data to port, bytes object as input
+    print(data)
+
+  @property
+  def in_waiting(self):
+    # Return number of bytes available for reading
+    return 5
+
+# Instrument instance with dummy serial port.
+dut = propar.instrument('dummy_port', serial_class=dummy_serial)
+```
+
 ## Data Types
 
 The data types available in the propar module are:
 
 * PP_TYPE_INT8  (unsigned char)
 * PP_TYPE_INT16 (unsigned int)
-* PP_TYPE_SINT16 (signed int, -32767 - 32767)
-* PP_TYPE_BSINT16 (signed int, -23593 - 41942)
+* PP_TYPE_SINT16 (signed int, -32767...32767)
+* PP_TYPE_BSINT16 (signed int, -23593...41942)
 * PP_TYPE_INT32 (unsigned long)
 * PP_TYPE_FLOAT (float)
 * PP_TYPE_STRING (string)
@@ -185,16 +224,20 @@ When propar module data types are used, the module will perform the required con
 
 ## Changelog
 
+### 0.5.4
+
+* Add support for externally provides serial class, this enables solutions that do not use a pySerial compatible serial port. The given serial class must support in_waiting, read, write, open, close.
+* Fix issue that write would modify parameter type of passed parameters.
+  
 ### 0.5.3
 
 * Fix issues with write chaining.
-* Support receiving strings that exceed MAX_PP_PARM_LEN (for IFI data dump mode).
+* Support receiving strings that exceed MAX_PP_PARM_LEN.
 
 ### 0.5.2
 
 * Add IP Address parameters to database.
 * Added mechanism to reduce CPU load with the new serial port handling.
-* Add basic usage counting, should automatically stop and start master serial ports.
   
 ### 0.5.1
 
