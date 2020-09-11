@@ -1,6 +1,3 @@
-# test serial injection functionality for special customer functionality
-# for example Pressure Control Solutions which use modbus tcp to serial converter, but want to use the bronkhorst-propar package.
-
 # To use serial injection provide a serial class with at least the folowing functions:
 # __init__(self, comport, baudrate)
 # open()
