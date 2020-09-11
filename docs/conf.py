@@ -18,8 +18,8 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'bronkhorst-propar'
-copyright = '2020, Kamiel Snoek'
-author = 'Kamiel Snoek'
+copyright = '2020, Bronkhorst'
+author = 'Bronkhorst'
 
 # The full version, including alpha/beta/rc tags
 release = '0.6.0'
