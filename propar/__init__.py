@@ -456,7 +456,7 @@ class master(object):
         # In that case there is a network loop, and we stop looking for nodes.
         for node in found_nodes:
           if scan_address == node['address']:
-            loop_detected == True
+            loop_detected = True
             if self.debug:
               print('Found network loop on node {:}'.format(resp[0]['data']))
 
