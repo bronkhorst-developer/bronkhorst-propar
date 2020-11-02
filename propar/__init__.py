@@ -1,4 +1,4 @@
-__version__ = "0.5.4"
+__version__ = "0.5.5"
 
 import collections
 import os
@@ -799,7 +799,7 @@ class database(object):
     if database_path == None:
       database_path = os.path.join(os.path.dirname(__file__), "parameters.json")
     with open(database_path) as f:
-      json_db        = json.load(f, encoding='utf-8')
+      json_db        = json.load(f)
       parm_list      = json_db['allparameters']
       self.parm_vals = json_db['parvalue']
       self.dde_dict  = {}

@@ -2,6 +2,11 @@
 Changelog
 =========
 
+0.5.5
+-----
+
+-  Fix database json loading using deprecated keyword encoding.
+
 0.5.4
 -----
 
