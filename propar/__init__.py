@@ -1,4 +1,4 @@
-__version__ = "0.5.5"
+__version__ = "0.6.0"
 
 import collections
 import os
@@ -135,9 +135,10 @@ class instrument(object):
     db (obj): Instance of the propar database, for conversion from DDE number to process, parameter number.
   """
 
-  def __init__(self, comport, address=0x80, baudrate=38400, serial_class=serial.Serial):
+  def __init__(self, comport, address=0x80, baudrate=38400, channel=1, serial_class=serial.Serial):
     self.address = address
     self.comport = comport
+    self.channel = channel
     if comport in _PROPAR_MASTERS:    
       # Master already created previously
       self.master = _PROPAR_MASTERS[comport]
@@ -146,6 +147,20 @@ class instrument(object):
       self.master = master(comport, baudrate, serial_class=serial_class)
       _PROPAR_MASTERS[comport] = self.master
     self.db = self.master.db
+
+  def __modify_parameter_channel(self, parm):
+    """Adjust the parameter definition for current channel.
+    
+    Args:
+      parm (dict): Parameter to modify.
+
+    Returns:
+      Modified parameter.
+    """
+    if self.channel >= 1 and self.channel <= 16:
+      if parm['proc_nr'] in [1, 33, 65, 97, 104]:
+        parm['proc_nr'] += self.channel - 1
+    return parm
 
   def readParameter(self, dde_nr):
     """Read a single parameter indicated by DDE nr.
@@ -160,6 +175,7 @@ class instrument(object):
       parm = self.db.get_parameter(dde_nr)
     except:
       raise ValueError('DDE parameter number error!')	  
+    parm = self.__modify_parameter_channel(parm)
     resp = self.read_parameters([parm])	
     if resp != None:
       for r in resp:
@@ -181,6 +197,7 @@ class instrument(object):
       parm = self.db.get_parameter(dde_nr)
     except:
       raise ValueError('DDE parameter number error!')
+    parm = self.__modify_parameter_channel(parm)
     parm['data'] = data
     resp = self.write_parameters([parm])
     return (resp == PP_STATUS_OK)
@@ -195,6 +212,7 @@ class instrument(object):
       List with parameters with data if successful, list with one status item otherwise.
     """
     parameters[0]['node'] = self.address
+    parameters = [self.__modify_parameter_channel(parm) for parm in parameters]
     return self.master.read_parameters(parameters)
 
   def write_parameters(self, parameters, command=PP_COMMAND_SEND_PARM_WITH_ACK):
@@ -208,6 +226,7 @@ class instrument(object):
       Propar status code (0 if successful).
     """
     parameters[0]['node'] = self.address
+    parameters = [self.__modify_parameter_channel(parm) for parm in parameters]
     return self.master.write_parameters(parameters, command)
 
   def read(self, proc_nr, parm_nr, parm_type):
@@ -247,7 +266,7 @@ class instrument(object):
       True if successful, False otherwise.
     """
     time_char = bytes([0x30+time]).decode('ascii')
-    return self.write(0, 0, PP_TYPE_STRING, time_char)
+    return self.writeParameter(1, time_char)
 
   @property
   def setpoint(self):
@@ -256,7 +275,7 @@ class instrument(object):
     Returns:
       Instrument setpoint if successful, None otherwise.
     """
-    self._setpoint = self.read(1, 1, PP_TYPE_INT16)
+    self._setpoint = self.readParameter(9)
     return self._setpoint
 
   @setpoint.setter
@@ -266,7 +285,7 @@ class instrument(object):
     Returns:
       True if successful, False otherwise.
     """
-    return self.write(1, 1, PP_TYPE_INT16, value)
+    return self.writeParameter(9, value)
 
   @property
   def measure(self):
@@ -275,7 +294,7 @@ class instrument(object):
     Returns:
       Instrument measure if successful, None otherwise.
     """
-    measure = self.read(1, 0, PP_TYPE_BSINT16)
+    measure = self.readParameter(8)
     return measure
 
   @property
@@ -285,7 +304,7 @@ class instrument(object):
     Returns:
       Instrument ID if successful, None otherwise.
     """
-    return self.read(0, 0, PP_TYPE_STRING)
+    return self.readParameter(1)
 
         
 
@@ -407,9 +426,9 @@ class master(object):
       self.response_timeout = org_timeout
 
     while scan_address != 0 and loop_detected == False:
-      parms = [{'node': scan_address, 'proc_nr':   0, 'parm_nr': 1, 'parm_type': PP_TYPE_INT8  },# address of this node
-               {'node': scan_address, 'proc_nr':   0, 'parm_nr': 0, 'parm_type': PP_TYPE_STRING},# id
-               {'node': scan_address, 'proc_nr':   0, 'parm_nr': 3, 'parm_type': PP_TYPE_INT8  }]# address of the next node
+      parms = [{'node': scan_address, 'proc_nr': 0, 'parm_nr':  1, 'parm_type': PP_TYPE_INT8  },# address of this node
+               {'node': scan_address, 'proc_nr': 0, 'parm_nr':  0, 'parm_type': PP_TYPE_STRING},# id
+               {'node': scan_address, 'proc_nr': 0, 'parm_nr':  3, 'parm_type': PP_TYPE_INT8  }]# address of the next node
 
       resp = self.read_parameters(parms)
 
@@ -435,7 +454,7 @@ class master(object):
           print("This is node {:>2} ({:}). Next node is {:}".format(resp[0]['data'], serial_number, resp[2]['data']))
 
         # Try to get device type from device
-        dev_resp = self.read_parameters([{'node': scan_address, 'proc_nr': 113, 'parm_nr': 1, 'parm_type': PP_TYPE_STRING}]) # device type?
+        dev_resp = self.read_parameters([{'node': scan_address, 'proc_nr': 113, 'parm_nr': 1, 'parm_type': PP_TYPE_STRING}]) # device type
         
         if dev_resp[0]['status'] == PP_STATUS_OK:
           device_type = dev_resp[0]['data']
@@ -449,6 +468,14 @@ class master(object):
             if device_type == int(option['value']):
               device_type = option['description'].split(':')[0]
 
+        # Try to get the number of channels from device
+        chan_resp = self.read_parameters([{'node': scan_address, 'proc_nr': 0, 'parm_nr': 18, 'parm_type': PP_TYPE_INT8}]) # number of channels
+        
+        if chan_resp[0]['status'] == PP_STATUS_OK:
+          nr_of_channels = chan_resp[0]['data']
+        else:
+          nr_of_channels = 1
+
         # Scan address = next address
         scan_address = resp[2]['data']
 
@@ -460,7 +487,7 @@ class master(object):
             if self.debug:
               print('Found network loop on node {:}'.format(resp[0]['data']))
 
-        found_nodes.append({'address': resp[0]['data'], 'type': device_type, 'serial': serial_number, 'id': resp[1]['data']})        
+        found_nodes.append({'address': resp[0]['data'], 'type': device_type, 'serial': serial_number, 'id': resp[1]['data'], 'channels': nr_of_channels})        
 
     return found_nodes
 
@@ -1529,6 +1556,13 @@ class _propar_provider(object):
             print(end='', flush=True)
         else:
           time.sleep(0.002)
+      except serial.serialutil.SerialException as serial_exception:
+        time.sleep(0.2)
+        try:
+          self.serial.close()
+          self.serial.open()
+        except:
+          pass
       except:
         time.sleep(0.002)
 
