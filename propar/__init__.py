@@ -159,6 +159,7 @@ class instrument(object):
     """
     if self.channel >= 1 and self.channel <= 16:
       if parm['proc_nr'] in [1, 33, 65, 97, 104]:
+        parm = dict(parm)
         parm['proc_nr'] += self.channel - 1
     return parm
 
