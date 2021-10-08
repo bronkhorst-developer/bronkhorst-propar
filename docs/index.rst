@@ -30,6 +30,7 @@ Contents:
    examples   
    propar
    changelog
+   contact
 
 
 Indices and tables

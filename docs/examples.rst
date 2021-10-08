@@ -29,21 +29,35 @@ Connecting to a single instrument
     el_flow.writeParameter(115, "Hello World!")
     print(el_flow.readParameter(115))
 
-Connecting to multiple instruments
----------------------------------- 
+Connecting to an instrument with multiple channels
+--------------------------------------------------
 
-Multiple instruments on the FLOW-BUS using the instruments localhost functionality.
+Some instruments are a single node (one address) but contain multiple channels (for multiple sensors).
+To connect to a specific channel, specify the channel when creating an instrument instance.
+If no channel is specified the first channel will be used.
 
 .. code:: python
 
     # Import the propar module
     import propar
 
-    # Connect to an instrument, however as there are multiple instruments
-    # we now supply the instrument node number to connect to a specific instrument.
-    el_flow = propar.instrument('COM1', 3)
+    # Connect to an instrument by specifying the channel number to connect to
+    flow = propar.instrument('COM1', channel=1)
+    pressure = propar.instrument('COM1', channel=2)
 
-    # Now connect to other instruments via the same instrument localhost (same serial port)
+Connecting to multiple instruments
+---------------------------------- 
+
+When instruments are connected to a FLOW-BUS network, the localhost function an instrument can be 
+used to connect to other instruments on the network (by specifying the node address). 
+
+.. code:: python
+
+    # Import the propar module
+    import propar
+
+    # Connect to an instrument by specifying the instrument node address to connect to
+    el_flow = propar.instrument('COM1', 3)
     cori_flow = propar.instrument('COM1', 4)
     es_flow   = propar.instrument('COM1', 5)
 
@@ -71,6 +85,10 @@ a propar master is automatically created for that comport. Using the
 get\_nodes function of the master, a list of all nodes on the network is
 collected and returned. This list can be used to check if all expected
 instruments are connected, or to get an overview of your network.
+
+The nodes list will also include the number of channels that are present
+on that device. Use this in combination with the channel functionality
+to create instances of each device and for the seperate device channels.
 
 .. code:: python
 

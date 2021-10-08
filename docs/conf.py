@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'bronkhorst-propar'
-copyright = '2020, Bronkhorst'
+copyright = '2020-2021, Bronkhorst'
 author = 'Bronkhorst'
 
 # The full version, including alpha/beta/rc tags

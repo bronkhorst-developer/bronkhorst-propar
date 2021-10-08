@@ -2,6 +2,11 @@
 Changelog
 =========
 
+0.6.0
+-----
+
+-  Add support for devices with multiple channels.
+
 0.5.5
 -----
 

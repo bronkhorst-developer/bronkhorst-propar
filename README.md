@@ -4,12 +4,7 @@ The Bronkhorst Propar module provides an implementation of a propar master for c
 
 Using the Bronkhorst Propar module it is possible to directly communicate with a single instrument, or to multiple instruments when they are connected to a FLOW-BUS network. The Bronkhorst Propar module communicates directly with the instruments using Python, and does not require tools such as FlowDDE to be installed. Therefore the module is platform independent and has been tested on both Windows and Linux (the module depends on pyserial for serial communication and should work on all platforms that support it).
 
-![Gas Flow](/docs/img/gas-flow.png "Gas Flow") ![Liquid Flow](/docs/img/liquid-flow-uc.png "Liquid Flow") ![Pressure](/docs/img/pressure.png "Pressure")
-
-## Parameters
-
-For a list of common parameters and the associated functionality available on Bronkhorst instruments, please consult document: [9.17.023 - Operating instructions for digital instruments](https://www.bronkhorst.com/getmedia/ad6a26ef-e33f-4424-b375-21d5811e3b04/917023-Manual-operation-instructions-digital-instruments).
-For a full list of parameters across most Bronkhorst instruments, as well as technical information about the propar protocol, please consult document: [9.17.0.27 - RS232 interface with ProPar protocol](https://www.bronkhorst.com/getmedia/77a1438f-e547-4a79-95ad-53e81fd38a97/917027-Manual-RS232-interface).
+![Gas Flow](https://github.com/bronkhorst-developer/bronkhorst-propar/raw/master/docs/img/gas-flow.png "Gas Flow") ![Liquid Flow](https://github.com/bronkhorst-developer/bronkhorst-propar/raw/master/docs/img/liquid-flow-uc.png "Liquid Flow") ![Pressure](https://github.com/bronkhorst-developer/bronkhorst-propar/raw/master/docs/img/pressure.png "Pressure")
 
 ## Installation
 
@@ -18,3 +13,12 @@ For a full list of parameters across most Bronkhorst instruments, as well as tec
 ## Documentation
 
 [bronkhorst-propar on Read the Docs](https://bronkhorst-propar.readthedocs.io/en/latest/introduction.html)
+
+## Contact
+
+If you have any questions about this module, our other products or services you can contact us by:
+
+- email: info@bronkhorst.com
+- website: www.bronkhorst.com
+- phone: +31 573 45 88 00
+- mail: Nijverheidsstraat 1A NL-7261 AK Ruurlo (The Netherlands)
