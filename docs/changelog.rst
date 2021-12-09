@@ -6,6 +6,8 @@ Changelog
 -----
 
 -  Add support for devices with multiple channels.
+-  Add support for automatically reopening serial port.
+-  Add support for callback on read and write parameters of instrument instances.
 
 0.5.5
 -----
