@@ -203,7 +203,7 @@ class instrument(object):
     resp = self.write_parameters([parm])
     return (resp == PP_STATUS_OK)
 
-  def read_parameters(self, parameters):
+  def read_parameters(self, parameters, callback=None):
     """Read multiple parameters.
     
     Args:
@@ -214,9 +214,9 @@ class instrument(object):
     """
     parameters[0]['node'] = self.address
     parameters = [self.__modify_parameter_channel(parm) for parm in parameters]
-    return self.master.read_parameters(parameters)
+    return self.master.read_parameters(parameters, callback)
 
-  def write_parameters(self, parameters, command=PP_COMMAND_SEND_PARM_WITH_ACK):
+  def write_parameters(self, parameters, command=PP_COMMAND_SEND_PARM_WITH_ACK, callback=None):
     """Write multiple parameters.
     
     Args:
@@ -228,7 +228,7 @@ class instrument(object):
     """
     parameters[0]['node'] = self.address
     parameters = [self.__modify_parameter_channel(parm) for parm in parameters]
-    return self.master.write_parameters(parameters, command)
+    return self.master.write_parameters(parameters, command, callback)
 
   def read(self, proc_nr, parm_nr, parm_type):
     """Read a single parameter.
@@ -1486,7 +1486,12 @@ class _propar_provider(object):
     # External flags / options
     self.debug = debug
     self.dump  = dump
-    self.mode  = mode
+    self.mode  = mode    
+	
+	# Additional features
+    self.auto_reopen = True
+    self.open_count  = 0
+    self.dump_byte   = None # function that takes dumped byte / char.
 
     # queues for propar data packets
     self.__receive_queue  = collections.deque()
@@ -1540,8 +1545,6 @@ class _propar_provider(object):
     This function must run in a thread.
     """
     while self.run:
-      # try-except added to fix issues when we are stopped (comport is closed).
-  	  # due to thread, this can cause read to error out.	  
       try:
         if self.paused == False:
           if self.serial.in_waiting:
@@ -1550,20 +1553,25 @@ class _propar_provider(object):
               was_propar_byte = self.__process_propar_byte(data_byte)
               if self.dump != 0:
                 if self.dump == 2 or was_propar_byte == False:
-                  print(chr(data_byte), end='')
+                  if self.dump_byte:
+                    self.dump_byte(chr(data_byte))
+                  else:
+                    print(chr(data_byte), end='')
           else:
             time.sleep(0.001)
           if self.dump != 0:
             print(end='', flush=True)
         else:
           time.sleep(0.002)
-      except serial.serialutil.SerialException as serial_exception:
+      except (IOError, TypeError) as e :
         time.sleep(0.2)
-        try:
-          self.serial.close()
-          self.serial.open()
-        except:
-          pass
+        if self.auto_reopen:
+          try:
+            self.serial.close()
+            self.serial.open()
+            self.open_count += 1
+          except:
+            pass
       except:
         time.sleep(0.002)
 
