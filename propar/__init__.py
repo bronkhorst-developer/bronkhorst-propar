@@ -1,12 +1,13 @@
-__version__ = "0.6.0"
+__version__ = "0.6.3"
 
 import collections
-import os
 import json
 import serial
 import struct
 import threading
 import time
+
+from . import parameters
 
 # status codes dict, input code, get string
 pp_status_codes = { 0: 'PP_STATUS_OK',
@@ -816,34 +817,28 @@ class database(object):
   """The database class is used to convert FlowDDE numbers to propar parameter objects.
   
     Several other supporting functions are also provided for manual use.
-  
-  Args:
-    database_path (str, optional): Use a custom database json file.
   """
 
   def __init__(self, database_path=None):
     #Columns:
     #Parameter	LongName	Name	Available	Group0	Group1	Group2	Process	FBnr	VarType	VarType2	VarLength	Min	Max	Read	Write	Poll	Advanced	Secured	Highly secured	Default	Description
-    if database_path == None:
-      database_path = os.path.join(os.path.dirname(__file__), "parameters.json")
-    with open(database_path) as f:
-      json_db        = json.load(f)
-      parm_list      = json_db['allparameters']
-      self.parm_vals = json_db['parvalue']
-      self.dde_dict  = {}
-      self.pp_dict   = {}
-      # Create dicts for faster access to parameters
-      for parm in self.__rows_to_parms(parm_list):
-        # Create dde dict
-        self.dde_dict[parm['dde_nr']] = parm
-        # Create propar dict
-        proc_nr = parm['proc_nr']
-        parm_nr = parm['parm_nr']
-        if proc_nr not in self.pp_dict.keys():          
-          self.pp_dict[proc_nr] = {}
-        if parm_nr not in self.pp_dict[proc_nr].keys():
-          self.pp_dict[proc_nr][parm_nr] = []
-        self.pp_dict[proc_nr][parm_nr].append(parm)
+    # Import database
+    parm_list      = parameters.parameters['allparameters']
+    self.parm_vals = parameters.parameters['parvalue']
+    self.dde_dict  = {}
+    self.pp_dict   = {}
+    # Create dicts for faster access to parameters
+    for parm in self.__rows_to_parms(parm_list):
+      # Create dde dict
+      self.dde_dict[parm['dde_nr']] = parm
+      # Create propar dict
+      proc_nr = parm['proc_nr']
+      parm_nr = parm['parm_nr']
+      if proc_nr not in self.pp_dict.keys():          
+        self.pp_dict[proc_nr] = {}
+      if parm_nr not in self.pp_dict[proc_nr].keys():
+        self.pp_dict[proc_nr][parm_nr] = []
+      self.pp_dict[proc_nr][parm_nr].append(parm)
 
 
   def __rows_to_parms(self, rows):
@@ -1563,7 +1558,7 @@ class _propar_provider(object):
             print(end='', flush=True)
         else:
           time.sleep(0.002)
-      except (IOError, TypeError) as e :
+      except (IOError, TypeError) as e:
         time.sleep(0.2)
         if self.auto_reopen:
           try:
