@@ -1,4 +1,4 @@
-__version__ = "0.6.3"
+__version__ = "0.7.0"
 
 import collections
 import json
@@ -127,6 +127,7 @@ class instrument(object):
     comport (str): COM port on which the instrument is connected (e.g. 'COM1' or '/dev/ttyUSB0').
     address (int, optional): Address of the instrument, default = 128 for local instrument.
     baudrate (int, optional): Baudrate to use for communication.
+    channel (int, optional): Channel to use for communication.
     serial_class (obj, optional): Custom serial class to be used for serial communication with the instrument.
 
   Attributes:
@@ -149,26 +150,30 @@ class instrument(object):
       _PROPAR_MASTERS[comport] = self.master
     self.db = self.master.db
 
-  def __modify_parameter_channel(self, parm):
+  def __modify_parameter_channel(self, parm, channel=None):
     """Adjust the parameter definition for current channel.
     
     Args:
       parm (dict): Parameter to modify.
+      channel (int, optional): Channel to use for communication (if none, self.channel is used).
 
     Returns:
       Modified parameter.
     """
-    if self.channel >= 1 and self.channel <= 16:
+    if channel == None:
+      channel = self.channel
+    if channel >= 1 and channel <= 16:
       if parm['proc_nr'] in [1, 33, 65, 97, 104]:
         parm = dict(parm)
-        parm['proc_nr'] += self.channel - 1
+        parm['proc_nr'] += channel - 1
     return parm
 
-  def readParameter(self, dde_nr):
+  def readParameter(self, dde_nr, channel=None):
     """Read a single parameter indicated by DDE nr.
 
     Args:
       dde_nr (int): FlowDDE parameter number.
+      channel (int, optional): Channel to use for communication.
 
     Returns:
       Parameter data if successful, None otherwise.
@@ -176,21 +181,21 @@ class instrument(object):
     try:
       parm = self.db.get_parameter(dde_nr)
     except:
-      raise ValueError('DDE parameter number error!')	  
-    parm = self.__modify_parameter_channel(parm)
-    resp = self.read_parameters([parm])	
+      raise ValueError('DDE parameter number error!')
+    resp = self.read_parameters([parm], channel=channel)	
     if resp != None:
       for r in resp:
         return r['data']
     else:
       return None
 
-  def writeParameter(self, dde_nr, data):
+  def writeParameter(self, dde_nr, data, channel=None):
     """Write a single parameter indicated by DDE nr.
 
     Args:
       dde_nr (int): FlowDDE parameter number.
       data: Parameter data to write.
+      channel (int, optional): Channel to use for communication.
 
     Returns:
       True if successful, False otherwise.
@@ -199,36 +204,39 @@ class instrument(object):
       parm = self.db.get_parameter(dde_nr)
     except:
       raise ValueError('DDE parameter number error!')
-    parm = self.__modify_parameter_channel(parm)
     parm['data'] = data
-    resp = self.write_parameters([parm])
+    resp = self.write_parameters([parm], channel=channel)
     return (resp == PP_STATUS_OK)
 
-  def read_parameters(self, parameters, callback=None):
+  def read_parameters(self, parameters, callback=None, channel=None):
     """Read multiple parameters.
     
     Args:
       parameters: List of parameter objects.
+      callback (function, optional): Function to be called when parameters are received (function will return directly!).
+      channel (int, optional): Channel to use for communication.
       
     Returns:
       List with parameters with data if successful, list with one status item otherwise.
     """
     parameters[0]['node'] = self.address
-    parameters = [self.__modify_parameter_channel(parm) for parm in parameters]
+    parameters = [self.__modify_parameter_channel(parm, channel) for parm in parameters]
     return self.master.read_parameters(parameters, callback)
 
-  def write_parameters(self, parameters, command=PP_COMMAND_SEND_PARM_WITH_ACK, callback=None):
+  def write_parameters(self, parameters, command=PP_COMMAND_SEND_PARM_WITH_ACK, callback=None, channel=None):
     """Write multiple parameters.
     
     Args:
       parameters: List of parameter objects, with data.
       command (int, optional): Propar command to use for writing.
+      callback (function, optional): Function to be called when parameters are received (function will return directly!).
+      channel (int, optional): Channel to use for communication.
 
     Returns:
       Propar status code (0 if successful).
     """
     parameters[0]['node'] = self.address
-    parameters = [self.__modify_parameter_channel(parm) for parm in parameters]
+    parameters = [self.__modify_parameter_channel(parm, channel) for parm in parameters]
     return self.master.write_parameters(parameters, command, callback)
 
   def read(self, proc_nr, parm_nr, parm_type):

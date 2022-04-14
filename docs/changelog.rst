@@ -2,9 +2,10 @@
 Changelog
 =========
 
-0.6.0
+0.7.0
 -----
 
+-  Updated parameter database.
 -  Add support for devices with multiple channels.
 -  Add support for automatically reopening serial port.
 -  Add support for callback on read and write parameters of instrument instances.

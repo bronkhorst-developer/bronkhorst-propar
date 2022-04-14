@@ -45,6 +45,10 @@ If no channel is specified the first channel will be used.
     flow = propar.instrument('COM1', channel=1)
     pressure = propar.instrument('COM1', channel=2)
 
+    # Alternatively, pass channel to parameter functions
+    instrument = propar.instrument('COM1')
+    p_upstream = instrument.readParameter(205, channel=2)
+
 Connecting to multiple instruments
 ---------------------------------- 
 

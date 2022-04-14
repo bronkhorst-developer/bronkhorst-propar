@@ -1,3 +1,2 @@
-include propar/parameters.json
 include README.md
 include LICENSE

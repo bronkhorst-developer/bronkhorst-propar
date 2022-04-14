@@ -4,9 +4,9 @@
 
 The Bronkhorst propar module provides an implementation of a propar
 master for communication with Bronkhorst (Mass) Flow Meters and
-Controllers (such as the EL-Flow, ES-Flow, (mini) CORI-FLOW, IQ+FLOW,
+Controllers (such as the FLEXI-FLOW, EL-FLOW, ES-FLOW, (mini) CORI-FLOW, IQ+FLOW,
 and others), Pressure Meters and Controllers (EL-PRESS), and others
-using the default RS232/RS485 interface.
+using the default USB/RS232/RS485 interface.
 
 Using the Bronkhorst propar module it is possible to directly
 communicate with a single instrument, or to multiple instruments when
@@ -17,8 +17,10 @@ platform independent and has been tested on both Windows and Linux (the
 module depends on pyserial for serial communication and should work on
 all platforms that support it).
 
-|Gas Flow| |Liquid Flow| |Pressure|
+|Gas Flow and Pressure| |Gas Flow| |Liquid Flow| |Pressure|
 
+.. |Gas Flow and Pressure| image:: /img/flexi-flow.png
+    :width: 225
 .. |Gas Flow| image:: /img/gas-flow.png
     :width: 225
 .. |Liquid Flow| image:: /img/liquid-flow-uc.png

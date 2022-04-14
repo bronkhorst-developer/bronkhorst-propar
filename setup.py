@@ -5,11 +5,11 @@ with open('readme.md', 'r') as f:
 
 setuptools.setup(
     name="bronkhorst_propar",
-    version="0.6.0",
+    version="0.7.0",
     url='https://github.com/bronkhorst-developer/bronkhorst-propar',
     author="Bronkhorst",
     author_email="support@bronkhorst.com",
-    description="Communicate to Bronkhorst Instruments using the propar protocol over RS232 or RS485.",
+    description="Communicate to Bronkhorst Instruments using the propar protocol over USB, RS232, or RS485.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     packages=setuptools.find_packages(),

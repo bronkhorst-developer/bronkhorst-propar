@@ -11,6 +11,9 @@ communicates directly with the instruments using Python, and does not require to
 Therefore the module is platform independent and has been tested on both Windows and Linux 
 (the module depends on pyserial for serial communication and should work on all platforms that support it).
 
+.. image::/img/flexi-flow.png
+  :alt: Gas Flow and Pressure
+  
 .. image::/img/gas-flow.png
   :alt: Gas Flow
 
