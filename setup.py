@@ -5,7 +5,7 @@ with open('readme.md', 'r') as f:
 
 setuptools.setup(
     name="bronkhorst_propar",
-    version="0.7.0",
+    version="1.0.0",
     url='https://github.com/bronkhorst-developer/bronkhorst-propar',
     author="Bronkhorst",
     author_email="support@bronkhorst.com",
