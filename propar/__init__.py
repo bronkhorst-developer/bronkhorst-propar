@@ -1127,24 +1127,29 @@ class _propar_builder(object):
             if (max_message_len - pos) >= 1:
               len_pos = pos
               pos += 1
+              # get bytes
+              if type(parameter['data']) is str:
+                str_bytes = parameter['data'].encode('utf-8')
+              elif type(parameter['data']) is bytes:
+                str_bytes = parameter['data']
+              else:
+                str_bytes = str(parameter['data']).encode('utf-8')
               # get string length
               if parameter['parm_size'] == 0:
                 try:
-                  len_str = len(parameter['data'])
+                  len_str = len(str_bytes)
                 except:
                   pass
               else:
                 len_str = parameter['parm_size']
               message[len_pos] = len_str
+              # pad with spaces if needed
+              if len_str > len(str_bytes):
+                str_bytes += b' ' * (len_str - len(str_bytes))
               # adjust string length to parm_size
-              for char in parameter['data'].ljust(len_str):
-                if type(char) is str: # is still a string convert to int of byte
-                  char = int.from_bytes(bytes(char, encoding='ascii'), byteorder='little')
-                message[pos] = char
+              for c in str_bytes:
+                message[pos] = c
                 pos += 1
-                len_str -= 1
-                if len_str == 0:
-                  break
               # zero terminate the string
               message[pos] = 0
               pos += 1
@@ -1362,7 +1367,7 @@ class _propar_builder(object):
               # Decode string and store data
               string_bytes = bytes(message[pos:pos+parameter['parm_size']])
               try:
-                parameter['data'] = string_bytes.decode('ascii')
+                parameter['data'] = string_bytes.decode('utf-8')
               except:
                 parameter['data'] = string_bytes
 
