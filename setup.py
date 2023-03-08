@@ -1,11 +1,14 @@
 import setuptools
 
-with open('readme.md', 'r') as f:
-    long_description = f.read()
+try:
+    with open('readme.md', 'r') as f:
+        long_description = f.read()
+except:
+    long_description = ""
 
 setuptools.setup(
     name="bronkhorst_propar",
-    version="1.0.1",
+    version="1.0.2",
     url='https://github.com/bronkhorst-developer/bronkhorst-propar',
     author="Bronkhorst",
     author_email="support@bronkhorst.com",

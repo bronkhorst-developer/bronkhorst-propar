@@ -2,6 +2,11 @@
 Changelog
 =========
 
+1.0.2
+-----
+
+-  Fix install from .tar.gz package.
+
 1.0.1
 -----
 
