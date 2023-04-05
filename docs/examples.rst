@@ -12,22 +12,24 @@ Connecting to a single instrument
 
     # Connect to the local instrument, when no settings provided
     # defaults to locally connected instrument (address=0x80, baudrate=38400)
-    el_flow = propar.instrument('COM1')
+    instrument = propar.instrument('COM1')
 
-    # The setpoint and measure parameters are available
-    # as properties, for ease of use.
-    el_flow.setpoint = 16000
-    print(el_flow.measure)
-    el_flow.setpoint = 0
+    # Measure and setpoint in output units.
+    instrument.writeParameter(206, 0.0)
+    print(instrument.readParameter(205), instrument.readParameter(129)) # fMeasure, Capacity Unit
 
-    # All parameters can be read using the process and parameter numbers,
-    # as well as the parameters data type.
-    el_flow.read(1, 1, propar.PP_TYPE_INT16)
+    # Measure and setpoint scaled to 0-32000 = 0-100%
+    instrument.writeParameter(9, 16000)
+    print(instrument.readParameter(8))
+    
+    # Measure and setpoint as property (also 0-32000)
+    instrument.setpoint = 0
+    print(instrument.measure)
 
     # Most parameters can also be read by their FlowDDE number,
     # for example the user tag parameter.
-    el_flow.writeParameter(115, "Hello World!")
-    print(el_flow.readParameter(115))
+    instrument.writeParameter(115, "Hello World!")
+    print(instrument.readParameter(115))
 
 Connecting to an instrument with multiple channels
 --------------------------------------------------

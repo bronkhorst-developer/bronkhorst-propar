@@ -1,7 +1,6 @@
-__version__ = "1.0.2"
+__version__ = "1.1.0"
 
 import collections
-import json
 import serial
 import struct
 import threading
