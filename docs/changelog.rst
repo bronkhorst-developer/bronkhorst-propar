@@ -2,6 +2,11 @@
 Changelog
 =========
 
+1.1.1
+-----
+
+-  Updated parameter database.
+
 1.1.0
 -----
 

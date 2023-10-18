@@ -1,4 +1,4 @@
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 
 import collections
 import serial
@@ -1117,7 +1117,7 @@ class _propar_builder(object):
                   try:
                     data = struct.unpack('4B', struct.pack('I', parameter['data']))
                   except:
-                    data = [0, 0]
+                    data = [0, 0, 0, 0]
               for byte in reversed(data):
                 message[pos] = byte
                 pos += 1

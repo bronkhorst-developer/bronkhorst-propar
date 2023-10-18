@@ -8,7 +8,7 @@ except:
 
 setuptools.setup(
     name="bronkhorst_propar",
-    version="1.1.0",
+    version="1.1.1",
     url='https://github.com/bronkhorst-developer/bronkhorst-propar',
     author="Bronkhorst",
     author_email="support@bronkhorst.com",
