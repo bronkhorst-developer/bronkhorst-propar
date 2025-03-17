@@ -1,4 +1,4 @@
-__version__ = "1.1.1"
+__version__ = "1.2.0"
 
 import collections
 import serial
@@ -1109,7 +1109,7 @@ class _propar_builder(object):
                 try:
                   data = struct.unpack('4B', struct.pack('f', parameter['data'])) 
                 except:
-                  data = [0, 0]
+                  data = [0, 0, 0, 0]
               else:
                 try:
                   data = struct.unpack('4B', struct.pack('i', parameter['data']))
@@ -1134,14 +1134,8 @@ class _propar_builder(object):
               else:
                 str_bytes = str(parameter['data']).encode('utf-8')
               # get string length
-              if parameter['parm_size'] == 0:
-                try:
-                  len_str = len(str_bytes)
-                except:
-                  pass
-              else:
-                len_str = parameter['parm_size']
-              message[len_pos] = len_str
+              len_str = parameter['parm_size']
+              message[len_pos] = len_str              
               # pad with spaces if needed
               if len_str > len(str_bytes):
                 str_bytes += b' ' * (len_str - len(str_bytes))
@@ -1150,9 +1144,9 @@ class _propar_builder(object):
                 message[pos] = c
                 pos += 1
               # zero terminate the string
-              message[pos] = 0
-              pos += 1
-              message[len_pos] += 1 
+              if len_str == 0 and message[pos  - 1] != 0: 
+                message[pos] = 0
+                pos += 1
 
     send_message['data'] = message[0:pos]
     send_message['len' ] = pos

@@ -2,6 +2,12 @@
 Changelog
 =========
 
+1.2.0
+-----
+
+-  Corrected string behavior. 
+-  Updated parameter database.
+
 1.1.1
 -----
 
