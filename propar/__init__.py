@@ -1,4 +1,4 @@
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 
 import collections
 import serial
@@ -45,7 +45,7 @@ pp_status_codes = { 0: 'PP_STATUS_OK',
                    33: 'PP_STATUS_SEND_ERROR',
                    34: 'PP_STATUS_PROTOCOL_ERROR',
                    35: 'PP_STATUS_MODULE_BUFFER_OVERFLOW'}
-                   
+
 # propar commands
 PP_COMMAND_STATUS                =    0  # status message
 PP_COMMAND_SEND_PARM_WITH_ACK    =    1  # send parameter with ack
@@ -54,49 +54,49 @@ PP_COMMAND_SEND_PARM_BROADCAST   =    3  # parameter broadcast
 PP_COMMAND_REQUEST_PARM          =    4  # request parameter
 
 # propar status codes
-PP_STATUS_OK                     =    0  # status ok              
-PP_STATUS_PROCESS_CLAIMED        =    1  # process is claimed     
-PP_STATUS_COMMAND                =    2  # unknown propar command 
-PP_STATUS_PROC_NUMBER            =    3  # unknown process number 
-PP_STATUS_PARM_NUMBER            =    4  # unknown param number   
-PP_STATUS_PARM_TYPE              =    5  # invalid parameter type 
+PP_STATUS_OK                     =    0  # status ok
+PP_STATUS_PROCESS_CLAIMED        =    1  # process is claimed
+PP_STATUS_COMMAND                =    2  # unknown propar command
+PP_STATUS_PROC_NUMBER            =    3  # unknown process number
+PP_STATUS_PARM_NUMBER            =    4  # unknown param number
+PP_STATUS_PARM_TYPE              =    5  # invalid parameter type
 PP_STATUS_PARM_VALUE             =    6  # invalid parameter value
-PP_STATUS_NETWORK_NOT_ACTIVE     =    7  # network not active     
-PP_STATUS_TIMEOUT_START_CHAR     =    8  # timeout in start char  
-PP_STATUS_TIMEOUT_SERIAL_LINE    =    9  # timeout serial line    
-PP_STATUS_HARDWARE_MEMORY        =   10  # hardware memory error  
-PP_STATUS_NODE_NUMBER            =   11  # node number error      
-PP_STATUS_GENERAL_COMMUNICATION  =   12  # general communication  
-PP_STATUS_READONLY               =   13  # parameter is readonly  
+PP_STATUS_NETWORK_NOT_ACTIVE     =    7  # network not active
+PP_STATUS_TIMEOUT_START_CHAR     =    8  # timeout in start char
+PP_STATUS_TIMEOUT_SERIAL_LINE    =    9  # timeout serial line
+PP_STATUS_HARDWARE_MEMORY        =   10  # hardware memory error
+PP_STATUS_NODE_NUMBER            =   11  # node number error
+PP_STATUS_GENERAL_COMMUNICATION  =   12  # general communication
+PP_STATUS_READONLY               =   13  # parameter is readonly
 PP_STATUS_PC_COMMUNICATION       =   14  # error pc-communication
-PP_STATUS_NO_RS232_CONNECTION    =   15  # no rs232 connection    
-PP_STATUS_PC_OUT_OF_MEMORY       =   16  # pc out of memory       
-PP_STATUS_WRITEONLY              =   17  # parameter is writeonly 
-PP_STATUS_UNKNOWN_CONFIGURATION  =   18  # unknown configuration  
-PP_STATUS_NO_FREE_NODE_ADDRESS   =   19  # no free node address   
-PP_STATUS_WRONG_INTERFACE        =   20  # wrong interface        
-PP_STATUS_ERROR_SERIAL_PORT      =   21  # serial port connection 
-PP_STATUS_OPENING_COMMUNICATION  =   22  # opening communication  
-PP_STATUS_COMMUNICATION_ERROR    =   23  # communication error    
-PP_STATUS_INTERFACE_BUS_MASTER   =   24  # interface bus master   
-PP_STATUS_TIMEOUT_ANSWER         =   25  # timeout answer         
-PP_STATUS_NO_START_CHARACTER     =   26  # no start character     
-PP_STATUS_ERROR_FIRST_DIGIT      =   27  # error first digit      
-PP_STATUS_HOST_BUFFER_OVERFLOW   =   28  # host buffer overflow   
-PP_STATUS_BUFFER_OVERFLOW        =   29  # buffer overflow        
-PP_STATUS_NO_ANSWER_FOUND        =   30  # no answer found        
-PP_STATUS_ERROR_CLOSE_COMM       =   31  # close comm error       
-PP_STATUS_SYNC_ERROR             =   32  # synchronization error  
-PP_STATUS_SEND_ERROR             =   33  # send error             
-PP_STATUS_PROTOCOL_ERROR         =   34  # propar protocol error  
-PP_STATUS_MODULE_BUFFER_OVERFLOW =   35  # buffer overflow        
+PP_STATUS_NO_RS232_CONNECTION    =   15  # no rs232 connection
+PP_STATUS_PC_OUT_OF_MEMORY       =   16  # pc out of memory
+PP_STATUS_WRITEONLY              =   17  # parameter is writeonly
+PP_STATUS_UNKNOWN_CONFIGURATION  =   18  # unknown configuration
+PP_STATUS_NO_FREE_NODE_ADDRESS   =   19  # no free node address
+PP_STATUS_WRONG_INTERFACE        =   20  # wrong interface
+PP_STATUS_ERROR_SERIAL_PORT      =   21  # serial port connection
+PP_STATUS_OPENING_COMMUNICATION  =   22  # opening communication
+PP_STATUS_COMMUNICATION_ERROR    =   23  # communication error
+PP_STATUS_INTERFACE_BUS_MASTER   =   24  # interface bus master
+PP_STATUS_TIMEOUT_ANSWER         =   25  # timeout answer
+PP_STATUS_NO_START_CHARACTER     =   26  # no start character
+PP_STATUS_ERROR_FIRST_DIGIT      =   27  # error first digit
+PP_STATUS_HOST_BUFFER_OVERFLOW   =   28  # host buffer overflow
+PP_STATUS_BUFFER_OVERFLOW        =   29  # buffer overflow
+PP_STATUS_NO_ANSWER_FOUND        =   30  # no answer found
+PP_STATUS_ERROR_CLOSE_COMM       =   31  # close comm error
+PP_STATUS_SYNC_ERROR             =   32  # synchronization error
+PP_STATUS_SEND_ERROR             =   33  # send error
+PP_STATUS_PROTOCOL_ERROR         =   34  # propar protocol error
+PP_STATUS_MODULE_BUFFER_OVERFLOW =   35  # buffer overflow
 
 # propar error codes
 PP_ERROR_PROTOCOL_ERROR          =    4  # propar protocol error
 PP_ERROR_MESSAGE_REJECTED        =    5  # destination addr reject
 PP_ERROR_RESPONSE_TIMEOUT        =    9  # propar response timeout
-  
-# propar data types  
+
+# propar data types
 PP_TYPE_INT8                     = 0x00  # integer,  8 bit
 PP_TYPE_INT16                    = 0x20  # integer, 16 bit
 PP_TYPE_SINT16                   = 0x21  # regular signed integer, 16 bit, 32767 max, -32767 min
@@ -110,18 +110,18 @@ PP_MODE_BINARY                   =    0  # Binary mode
 PP_MODE_ASCII                    =    1  # ASCII mode
 
 # propar max parameter length (strings)
-MAX_PP_PARM_LEN                  =   61  # max parameter length  
+MAX_PP_PARM_LEN                  =  248  # max parameter length
 
 # List of initialized masters
 _PROPAR_MASTERS = {}
 
 
 class instrument(object):
-  """Implements a propar instrument for easy access to instrument parameters. 
-  
+  """Implements a propar instrument for easy access to instrument parameters.
+
   The instrument class wraps around a master instance, which is created for the given comport.
-  Multiple instruments with the same comport use the same master. 
-  
+  Multiple instruments with the same comport use the same master.
+
   Args:
     comport (str): COM port on which the instrument is connected (e.g. 'COM1' or '/dev/ttyUSB0').
     address (int, optional): Address of the instrument, default = 128 for local instrument.
@@ -140,10 +140,10 @@ class instrument(object):
     self.address = address
     self.comport = comport
     self.channel = channel
-    if comport in _PROPAR_MASTERS:    
+    if comport in _PROPAR_MASTERS:
       # Master already created previously
       self.master = _PROPAR_MASTERS[comport]
-    else: 
+    else:
       # No master, create it and store it
       self.master = master(comport, baudrate, serial_class=serial_class)
       _PROPAR_MASTERS[comport] = self.master
@@ -151,7 +151,7 @@ class instrument(object):
 
   def __modify_parameter_channel(self, parm, channel=None):
     """Adjust the parameter definition for current channel.
-    
+
     Args:
       parm (dict): Parameter to modify.
       channel (int, optional): Channel to use for communication (if none, self.channel is used).
@@ -181,7 +181,7 @@ class instrument(object):
       parm = self.db.get_parameter(dde_nr)
     except:
       raise ValueError('DDE parameter number error!')
-    resp = self.read_parameters([parm], channel=channel)	
+    resp = self.read_parameters([parm], channel=channel)
     if resp != None:
       for r in resp:
         return r['data']
@@ -209,12 +209,12 @@ class instrument(object):
 
   def read_parameters(self, parameters, callback=None, channel=None):
     """Read multiple parameters.
-    
+
     Args:
       parameters: List of parameter objects.
       callback (function, optional): Function to be called when parameters are received (function will return directly!).
       channel (int, optional): Channel to use for communication.
-      
+
     Returns:
       List with parameters with data if successful, list with one status item otherwise.
     """
@@ -224,7 +224,7 @@ class instrument(object):
 
   def write_parameters(self, parameters, command=PP_COMMAND_SEND_PARM_WITH_ACK, callback=None, channel=None):
     """Write multiple parameters.
-    
+
     Args:
       parameters: List of parameter objects, with data.
       command (int, optional): Propar command to use for writing.
@@ -240,7 +240,7 @@ class instrument(object):
 
   def read(self, proc_nr, parm_nr, parm_type):
     """Read a single parameter.
-    
+
     Args:
       proc_nr (int): process number.
       parm_nr (int): parameter number.
@@ -253,7 +253,7 @@ class instrument(object):
 
   def write(self, proc_nr, parm_nr, parm_type, data):
     """Write a single parameter.
-    
+
     Args:
       proc_nr (int): process number.
       parm_nr (int): parameter number.
@@ -264,12 +264,12 @@ class instrument(object):
       True if successful, False otherwise.
     """
     return self.master.write(self.address, proc_nr, parm_nr, parm_type, data)
-  
+
   def wink(self, time=9):
     """Wink the LEDs on the instrument.
-    
+
     Args:
-      time (int, optional): Wink duration 1-9 seconds.    
+      time (int, optional): Wink duration 1-9 seconds.
 
     Returns:
       True if successful, False otherwise.
@@ -280,7 +280,7 @@ class instrument(object):
   @property
   def setpoint(self):
     """Reads the setpoint of the instrument (0-32000 = 0-100%).
-    
+
     Returns:
       Instrument setpoint if successful, None otherwise.
     """
@@ -299,7 +299,7 @@ class instrument(object):
   @property
   def measure(self):
     """Reads the measure of the instrument (0-32000 = 0-100%).
-    
+
     Returns:
       Instrument measure if successful, None otherwise.
     """
@@ -309,22 +309,22 @@ class instrument(object):
   @property
   def id(self):
     """Reads the ID parameter of the instrument.
-    
+
     Returns:
       Instrument ID if successful, None otherwise.
     """
     return self.readParameter(1)
 
-        
+
 
 
 class master(object):
-  """Implements a propar master for communication with Bronkhorst instruments. 
-  
-    After initializing this can be used to read/write parameters of an instrument. 
-    When local host functionality is used (MBC with flowbus), it is also possible to 
+  """Implements a propar master for communication with Bronkhorst instruments.
+
+    After initializing this can be used to read/write parameters of an instrument.
+    When local host functionality is used (MBC with flowbus), it is also possible to
     communicate with other nodes on the network.
-  
+
   Args:
     comport (str): COM port on which the instrument is connected (e.g. 'COM1' or '/dev/ttyUSB0').
     baudrate (int, optional): Baudrate to use for communication.
@@ -361,72 +361,72 @@ class master(object):
     self.seq = 0
     # lock for sequence
     self.seq_lock = threading.Lock()
-    
+
     # list of active messages
-    self.__pending_requests   = []    
+    self.__pending_requests   = []
     self.__processed_requests = []
-    
+
     # 500 ms timeout on all messages
     self.response_timeout = 0.5
-    
+
     # thread for processing propar messages
     self.msg_handler_thread = threading.Thread(target=self.__message_handler_task, args=())
     self.msg_handler_thread.daemon = True
-    self.msg_handler_thread.start()    
+    self.msg_handler_thread.start()
 
   def __dummy_callback(self, dummy):
     pass
 
   def set_baudrate(self, baudrate):
     """Set the baudrate used for communication.
-    
+
     Args:
       baudrate (int): New baudrate.
     """
     self.propar.set_baudrate(baudrate)
 
-  def dump(self, level=1): 
+  def dump(self, level=1):
     """Set dump level for debug purposes.
 
     Dump level 0 = Disable.
     Dump level 1 = Print non-propar communication to console.
     Dump level 2 = Print all communication to console.
-    
+
     Args:
       level (int): New dump level.
     """
     self.propar.dump = level
-  
-  def stop(self): 
+
+  def stop(self):
     """Disconnect the comport."""
     self.propar.stop()
-    
-  def start(self): 
+
+  def start(self):
     """Reconnect the comport."""
     self.propar.start()
-  
+
   def get_nodes(self, find_first=True):
-    """Get a list of nodes on the network. 
-    
+    """Get a list of nodes on the network.
+
     Will scan from 1 to local address to find the first node!
-    
+
     Args:
       find_first (bool, optional): Scan from 1 to local address to find node.
 
     Returns:
       List with information about the instruments on the network.
-    """ 
-    scan_address  = 0x80  
+    """
+    scan_address  = 0x80
     found_nodes   = []
     loop_detected = False
 
-    if find_first:      
+    if find_first:
       found_first_node = False
-      scan_address     = 1     
-      local_address    = self.read_parameters([{'node': 0x80, 'proc_nr': 0, 'parm_nr': 1, 'parm_type': PP_TYPE_INT8}])[0]['data']     
+      scan_address     = 1
+      local_address    = self.read_parameters([{'node': 0x80, 'proc_nr': 0, 'parm_nr': 1, 'parm_type': PP_TYPE_INT8}])[0]['data']
       org_timeout = self.response_timeout
       self.response_timeout = 0.05   # scan with small timeout to speed this up.
-      while found_first_node == False and scan_address != local_address:
+      while found_first_node == False and scan_address != local_address and scan_address <= 0x80:
         resp = self.read_parameters([{'node': scan_address, 'proc_nr': 0, 'parm_nr': 1, 'parm_type': PP_TYPE_INT8}])
         if resp[0]['status'] == PP_STATUS_OK:
           found_first_node = True
@@ -464,7 +464,7 @@ class master(object):
 
         # Try to get device type from device
         dev_resp = self.read_parameters([{'node': scan_address, 'proc_nr': 113, 'parm_nr': 1, 'parm_type': PP_TYPE_STRING}]) # device type
-        
+
         if dev_resp[0]['status'] == PP_STATUS_OK:
           device_type = dev_resp[0]['data']
         else:
@@ -473,13 +473,13 @@ class master(object):
           # extract device id from id string (first byte)
           device_type = int.from_bytes(bytes(resp[1]['data'][0], encoding='ascii'), byteorder='little')
           options = db.get_parameter_values(175)
-          for option in options:          
+          for option in options:
             if device_type == int(option['value']):
               device_type = option['description'].split(':')[0]
 
         # Try to get the number of channels from device
         chan_resp = self.read_parameters([{'node': scan_address, 'proc_nr': 0, 'parm_nr': 18, 'parm_type': PP_TYPE_INT8}]) # number of channels
-        
+
         if chan_resp[0]['status'] == PP_STATUS_OK:
           nr_of_channels = chan_resp[0]['data']
         else:
@@ -496,7 +496,7 @@ class master(object):
             if self.debug:
               print('Found network loop on node {:}'.format(resp[0]['data']))
 
-        found_nodes.append({'address': resp[0]['data'], 'type': device_type, 'serial': serial_number, 'id': resp[1]['data'], 'channels': nr_of_channels})        
+        found_nodes.append({'address': resp[0]['data'], 'type': device_type, 'serial': serial_number, 'id': resp[1]['data'], 'channels': nr_of_channels})
 
     return found_nodes
 
@@ -544,7 +544,7 @@ class master(object):
     After processing a callback may be called if it was provided during sending the request.
     For write the callback can acknowledge the write (with status). Status on failure is also possible.
     For read the callback returns the list of parameters with data. Callback is per request, not per parameter.
-    """    
+    """
     while True:
       # Read new propar message
       propar_message = self.propar.read_propar_message()
@@ -560,7 +560,7 @@ class master(object):
             filtered_requests.append(req)
           else:
             if req['callback'] != None:
-              if req['data'][0] == PP_COMMAND_SEND_PARM:
+              if req['message']['data'][0] == PP_COMMAND_SEND_PARM:
                 req['callback']([{'status': PP_STATUS_TIMEOUT_ANSWER, 'data': None}])
               else:
                 req['callback'](PP_STATUS_TIMEOUT_ANSWER)
@@ -627,16 +627,16 @@ class master(object):
           # delete the now old pending request.
           self.__pending_requests.remove(request)
 
-      
+
   def __next_seq(self):
     """Get next sequence number"""
     with self.seq_lock:
       self.seq += 1
       if self.seq > 255:
         self.seq = 0
-    return self.seq    
-      
-      
+    return self.seq
+
+
   def __get_size(self, parameter_type):
     """Get size for parameter type"""
     if parameter_type == PP_TYPE_INT8:
@@ -647,11 +647,11 @@ class master(object):
       return 4
     else: # PP_TYPE_STRING
       return 0
-      
-      
+
+
   def read(self, address, proc_nr, parm_nr, parm_type):
     """Read a single parameter.
-    
+
     Args:
       address (int): instrument node address.
       proc_nr (int): process number.
@@ -666,7 +666,7 @@ class master(object):
     parm['proc_nr'  ] = proc_nr
     parm['parm_nr'  ] = parm_nr
     parm['parm_type'] = parm_type
-    resp = self.read_parameters([parm])    
+    resp = self.read_parameters([parm])
     if resp:
       for r in resp:
         return r['data']
@@ -675,7 +675,7 @@ class master(object):
 
   def write(self, address, proc_nr, parm_nr, parm_type, data):
     """Write a single parameter.
-    
+
     Args:
       address (int): instrument node address.
       proc_nr (int): process number.
@@ -693,12 +693,12 @@ class master(object):
     parm['parm_type'] = parm_type
     parm['data'     ] = data
     resp = self.write_parameters([parm])
-    return resp == PP_STATUS_OK    
-      
-      
-  def read_parameters(self, parameters, callback=None):  
+    return resp == PP_STATUS_OK
+
+
+  def read_parameters(self, parameters, callback=None):
     """Read multiple parameters.
-    
+
     From a list of parameter objects.
 
     Args:
@@ -709,48 +709,48 @@ class master(object):
       List with parameters with data if successful, list with one status item otherwise.
       When callback is used this will return None.
     """
-    request_message = {}    
-    
+    request_message = {}
+
     # Add parm_size (from type) and add proc_index and parm_index (= proc_nr and parm_nr)
     for parameter in parameters:
       if 'parm_size' not in parameter:
-        parameter['parm_size'] = self.__get_size(parameter['parm_type'])      
+        parameter['parm_size'] = self.__get_size(parameter['parm_type'])
       parameter['proc_index'] = parameter['proc_nr']
       parameter['parm_index'] = parameter['parm_nr']
-        
+
     # Fill request message with node address and sequence number
     request_message['node'] = parameters[0]['node']
-    request_message['seq' ] = self.__next_seq()        
-    
+    request_message['seq' ] = self.__next_seq()
+
     # Build the request message (will update length and data fields)
-    request_message = self.propar_builder.build_pp_request_parameter_message(request_message, parameters)     
+    request_message = self.propar_builder.build_pp_request_parameter_message(request_message, parameters)
     # Add this message to the pending requests list
     request = {'message': request_message, 'parameters': parameters, 'age': time.time(), 'callback': callback}
     self.__pending_requests.append(request)
-      
+
     # Write the message to the propar interface
     self.propar.write_propar_message(request_message)
-    
+
     if callback != None:
       return None
     else:
       # Wait for processed response to appear magically!
-      timeout_time = time.time() + self.response_timeout    
+      timeout_time = time.time() + self.response_timeout
       response = None
       while time.time() <= timeout_time and response == None:
         time.sleep(0.00001)
         for resp in self.__processed_requests:
           if resp['message']['seq'] == request_message['seq']:
             if resp['request'] != request: # Stale request, remove
-              self.__processed_requests.remove(resp) 
+              self.__processed_requests.remove(resp)
             else:
               response = resp
-              self.__processed_requests.remove(resp) 
+              self.__processed_requests.remove(resp)
               break
-      
+
       # no response, timeout
       if response is None:
-        return [{'status': PP_STATUS_TIMEOUT_ANSWER, 'data': None}]        
+        return [{'status': PP_STATUS_TIMEOUT_ANSWER, 'data': None}]
       # parameter data
       elif 'parameters' in response and response['parameters'] is not None:
         return response['parameters']
@@ -760,11 +760,11 @@ class master(object):
       # status code status
       else:
         return [{'status':        response['message']['data'][1], 'data': None}]  # return a parameter with status code
-          
-      
-  def write_parameters(self, parameters, command=PP_COMMAND_SEND_PARM_WITH_ACK, callback=None):  
+
+
+  def write_parameters(self, parameters, command=PP_COMMAND_SEND_PARM_WITH_ACK, callback=None):
     """Write multiple parameters.
-    
+
     Args:
       parameters: List of parameter objects, with data.
       command (int, optional): Propar command to use for writing.
@@ -773,42 +773,42 @@ class master(object):
     Returns:
       Propar status code (0 if successful, or callback is used).
     """
-    write_message = {}   
-    
+    write_message = {}
+
     # Add parm_size (from type) and add proc_index and parm_index (= proc_nr and parm_nr)
     for parameter in parameters:
       if 'parm_size' not in parameter:
-        parameter['parm_size'] = self.__get_size(parameter['parm_type'])      
+        parameter['parm_size'] = self.__get_size(parameter['parm_type'])
       parameter['proc_index'] = parameter['proc_nr']
       parameter['parm_index'] = parameter['parm_nr']
 
     # Setup the final fields, and build the message.
     write_message['node'] = parameters[0]['node']
-    write_message['seq' ] = self.__next_seq()    
+    write_message['seq' ] = self.__next_seq()
     write_message = self.propar_builder.build_pp_send_parameter_message(write_message, parameters, command)
-    
+
     if command == PP_COMMAND_SEND_PARM_WITH_ACK:
       request = {'message': write_message, 'parameters': parameters, 'age': time.time(), 'callback': callback}
       self.__pending_requests.append(request)
-    
+
     if self.debug:
       print("Sent Message:", write_message)
-      
+
     self.propar.write_propar_message(write_message)
-    
+
     if command == PP_COMMAND_SEND_PARM_WITH_ACK and callback == None:
       # Wait for processed response to appear magically!
-      timeout_time = time.time() + self.response_timeout    
+      timeout_time = time.time() + self.response_timeout
       response = None
-      while time.time() <= timeout_time and response == None:      
+      while time.time() <= timeout_time and response == None:
         time.sleep(0.00001)
         for resp in self.__processed_requests:
           if resp['message']['seq'] == write_message['seq']:
             if resp['request'] != request: # Stale request, remove
-              self.__processed_requests.remove(resp) 
+              self.__processed_requests.remove(resp)
             else:
               response = resp
-              self.__processed_requests.remove(resp) 
+              self.__processed_requests.remove(resp)
               break
       if response is None:
         return PP_STATUS_TIMEOUT_ANSWER
@@ -822,7 +822,7 @@ class master(object):
 
 class database(object):
   """The database class is used to convert FlowDDE numbers to propar parameter objects.
-  
+
     Several other supporting functions are also provided for manual use.
   """
 
@@ -830,8 +830,8 @@ class database(object):
     #Columns:
     #Parameter	LongName	Name	Available	Group0	Group1	Group2	Process	FBnr	VarType	VarType2	VarLength	Min	Max	Read	Write	Poll	Advanced	Secured	Highly secured	Default	Description
     # Import database
-    parm_list      = parameters.parameters['allparameters']
-    self.parm_vals = parameters.parameters['parvalue']
+    parm_list      = parameters.parameters
+    self.parm_vals = parameters.values
     self.dde_dict  = {}
     self.pp_dict   = {}
     # Create dicts for faster access to parameters
@@ -841,7 +841,7 @@ class database(object):
       # Create propar dict
       proc_nr = parm['proc_nr']
       parm_nr = parm['parm_nr']
-      if proc_nr not in self.pp_dict.keys():          
+      if proc_nr not in self.pp_dict.keys():
         self.pp_dict[proc_nr] = {}
       if parm_nr not in self.pp_dict[proc_nr].keys():
         self.pp_dict[proc_nr][parm_nr] = []
@@ -849,29 +849,40 @@ class database(object):
 
 
   def __rows_to_parms(self, rows):
-    type_conv = {'c': PP_TYPE_INT8,
-                 'i': PP_TYPE_INT16,
-                 'l': PP_TYPE_INT32,
-                 'f': PP_TYPE_FLOAT}
+    type_conv = {'Byte': PP_TYPE_INT8,
+                 'UInt16': PP_TYPE_INT16,
+                 'BHTInteger': PP_TYPE_BSINT16,
+                 'UInt32': PP_TYPE_INT32,
+                 'Float': PP_TYPE_FLOAT,
+                 'String': PP_TYPE_STRING,
+                 'BinaryString': PP_TYPE_STRING}
+    type_corr = {9: PP_TYPE_INT16,
+                 11: PP_TYPE_SINT16}
     parms = []
     for r in rows:
-      p = {}
-      p['dde_nr'   ] = int(r['parameter'])
-      if r['process'] == '': r['process'] = '1'
-      p['proc_nr'] = int(r['process'])
-      p['parm_nr'] = int(r['fbnr'])
-      p['parm_type'] = type_conv[r['vartype']]
+      dde_nr = int(r['Parameter'])
+      proc_nr = int(r['ProPar']['Process'])
+      parm_nr = int(r['ProPar']['Parameter'])
+      parm_type = type_conv[r['Type']]
+      parm_name = r['Name']
       # Set extended int types if required.
-      if p['parm_type'] == PP_TYPE_INT16:
-        # regular signed int
-        if int(r['min']) == -32767:
-          p['parm_type'] = PP_TYPE_SINT16
-        # bronkhorst signed int
-        elif int(r['min']) == -23593:
-          p['parm_type'] = PP_TYPE_BSINT16
-      if r['varlength'] != '':
-        p['parm_type'] = PP_TYPE_STRING
-      p['parm_name'] = r['longname']
+      if dde_nr in type_corr.keys():
+        parm_type = type_corr[dde_nr]
+      p = {
+          'dde_nr': dde_nr,
+          'proc_nr': proc_nr,
+          'parm_nr': parm_nr,
+          'parm_type': parm_type,
+          'parm_name': parm_name
+        }
+      if r['Type'] == 'BinaryString' and r['Length'] != None:
+        p['parm_size'] = int(r['Length'])
+      # Skip certain legacy definitions
+      if p['dde_nr'] == 278 and p['parm_type'] != PP_TYPE_INT32:
+        continue
+      if p['dde_nr'] == 298 and p['parm_type'] != PP_TYPE_FLOAT:
+        continue
+      # Add parameter
       parms.append(p)
     return parms
 
@@ -881,7 +892,7 @@ class database(object):
 
   def get_parameters(self, dde_parameter_nrs):
     """Get propar parameter objects from a list of DDE nrs.
-    
+
     Args:
       dde_parameter_nrs (list:int): List of DDE nrs.
 
@@ -895,7 +906,7 @@ class database(object):
 
   def get_parameter(self, dde_parameter_nr):
     """Get a propar parameter object for the given DDE nrs.
-    
+
     Args:
       dde_parameter_nr (int): DDE nrs.
 
@@ -906,7 +917,7 @@ class database(object):
 
   def get_parameters_like(self, like_this):
     """Get a list of propar parameter objects that match the like_this argument.
-    
+
     Args:
       like_this (str): String to find in parameter name.
 
@@ -914,12 +925,12 @@ class database(object):
       A list of matching propar parameter objects.
     """
     like_this =  like_this.lower().replace(' ', '')
-    parms = [dict(obj) for obj in self.dde_dict.values() if like_this in obj['parm_name'].lower().replace(' ', '')]    
+    parms = [dict(obj) for obj in self.dde_dict.values() if like_this in obj['parm_name'].lower().replace(' ', '')]
     return parms
 
   def get_parameter_values(self, dde_parameter_nr):
     """Get a list of possible values for for the given DDE nr..
-    
+
     Args:
       dde_parameter_nr (int): DDE nr.
 
@@ -931,7 +942,7 @@ class database(object):
 
   def get_propar_parameter(self, proc_nr, parm_nr):
     """Get a list of possible propar parameter objects for the given process, parameter number combination.
-    
+
     Args:
       proc_nr (int): Process number.
       parm_nr (int): Parameter number.
@@ -946,7 +957,7 @@ class database(object):
 
   def get_propar_parameters(self, process):
     """Get a list of possible propar parameter objects for the given process.
-    
+
     Args:
       proc_nr (int): Process number.
 
@@ -958,15 +969,15 @@ class database(object):
     except:
       return None
 
-    
-    
-    
+
+
+
 class _propar_builder(object):
   """Contains Propar Message Functions for status/error/read/write/send/request"""
 
   def __init__(self, debug=False):
     self.debug = debug
-    
+
 
   def create_pp_status_message(self, propar_message, status, status_pos=0):
     """Create a propar status message from status and optional status position"""
@@ -992,15 +1003,15 @@ class _propar_builder(object):
     response_message['len' ] = 1
     response_message['data'] = []
     response_message['data'].append(error)
-    return response_message    
-    
+    return response_message
+
 
   def build_pp_send_parameter_message(self, propar_message, parameters, command = None):
-    """Build propar write message from input parameters"""    
+    """Build propar write message from input parameters"""
 
     # Preprocess parameters to setup all the required fields for chaining.
     f = 0  # First of the current process
-    for i in range(len(parameters)):      
+    for i in range(len(parameters)):
       # Start with no flags set
       parameters[i]['proc_chained'] = False
       parameters[i]['parm_chained'] = False
@@ -1009,7 +1020,7 @@ class _propar_builder(object):
         if parameters[i]['proc_nr'] == parameters[i - 1]['proc_nr']:
           parameters[i - 1]['parm_chained'] = True
         else:
-          parameters[i - 1]['parm_chained'] = False      
+          parameters[i - 1]['parm_chained'] = False
           parameters[f    ]['proc_chained'] = True
           f = i
 
@@ -1031,7 +1042,7 @@ class _propar_builder(object):
 
     if command is None:
       command = PP_COMMAND_SEND_PARM
-    
+
     for parameter in parameters:
       values_ok = False
 
@@ -1076,9 +1087,9 @@ class _propar_builder(object):
           if prev_parm_chained == False:
             message[pos] = proc_index
             pos += 1
-            
+
           prev_parm_chained = parameter['parm_chained']
-            
+
           message[pos] = parm_index | parm_type
           pos += 1
 
@@ -1107,7 +1118,7 @@ class _propar_builder(object):
             if (max_message_len - pos) >= 4:
               if parameter['parm_type'] == PP_TYPE_FLOAT:
                 try:
-                  data = struct.unpack('4B', struct.pack('f', parameter['data'])) 
+                  data = struct.unpack('4B', struct.pack('f', parameter['data']))
                 except:
                   data = [0, 0, 0, 0]
               else:
@@ -1135,7 +1146,7 @@ class _propar_builder(object):
                 str_bytes = str(parameter['data']).encode('utf-8')
               # get string length
               len_str = parameter['parm_size']
-              message[len_pos] = len_str              
+              message[len_pos] = len_str
               # pad with spaces if needed
               if len_str > len(str_bytes):
                 str_bytes += b' ' * (len_str - len(str_bytes))
@@ -1144,7 +1155,7 @@ class _propar_builder(object):
                 message[pos] = c
                 pos += 1
               # zero terminate the string
-              if len_str == 0 and message[pos  - 1] != 0: 
+              if len_str == 0 and message[pos  - 1] != 0:
                 message[pos] = 0
                 pos += 1
 
@@ -1152,16 +1163,16 @@ class _propar_builder(object):
     send_message['len' ] = pos
 
     return send_message
-    
-    
+
+
   def build_pp_request_parameter_message(self, propar_message, parameters):
     """Build a propar request parameter message from the passed parameters.
-    The passed parameters should all be destined for the same node!"""   
+    The passed parameters should all be destined for the same node!"""
     request_message = {}
     request_message['seq' ] = propar_message['seq' ]
     request_message['node'] = propar_message['node']
-    request_message['len' ] = 0    
-    
+    request_message['len' ] = 0
+
     pos               = 0
     message           = [0 for x in range(0, 255)]
     message_len       = 0
@@ -1169,16 +1180,16 @@ class _propar_builder(object):
     build_ok          = False
 
     parm_chained      = False
-    prev_proc_nr      = 0  
+    prev_proc_nr      = 0
     prev_proc_index   = 0
     prev_parm_index   = 0
-    
+
     for parameter in parameters:
-      
+
       parm_chained = False
-              
+
       if   parameter['parm_type'] == PP_TYPE_FLOAT:
-        parm_type = PP_TYPE_INT32        
+        parm_type = PP_TYPE_INT32
       elif parameter['parm_type'] in [PP_TYPE_SINT16, PP_TYPE_BSINT16]:
         parm_type = PP_TYPE_INT16
       else:
@@ -1186,7 +1197,7 @@ class _propar_builder(object):
 
       if request_message['node'] is None:
         request_message['node'] = parameter['node']
-      
+
       if(pos                     <  max_message_len      and
          parameter['proc_nr']    <= 0x7F                 and
          parameter['proc_index'] <= 0x7F                 and
@@ -1194,31 +1205,31 @@ class _propar_builder(object):
          parameter['parm_index'] <= 0x1F                 and
          (parm_type & 0x9F)      == 0x00                 and
          parameter['parm_size']  <  MAX_PP_PARM_LEN         ):
-         
+
         if pos == 0:
           message[pos] = PP_COMMAND_REQUEST_PARM
           pos += 1
-          
+
         if pos == 1:
           prev_proc_index = pos
           prev_parm_index = pos + 1
-          
+
         elif prev_proc_nr != parameter['proc_nr']:
           message[prev_proc_index] = message[prev_proc_index] | 0x80
           prev_proc_index = pos
           prev_parm_index = pos + 1
-          
+
         else:
           parm_chained = True
           message[prev_parm_index] = message[prev_parm_index] | 0x80
-          prev_parm_index = pos          
-          
+          prev_parm_index = pos
+
         prev_proc_nr = parameter['proc_nr']
-        
+
         if(((parm_chained is True  and (max_message_len - pos) >= 3)) or
            ((parm_chained is False and (max_message_len - pos) >= 4))   ):
-           
-          if(parm_chained is False): 
+
+          if(parm_chained is False):
             message[pos] = parameter['proc_index']
             pos += 1
 
@@ -1240,12 +1251,12 @@ class _propar_builder(object):
 
           if build_ok:
             message_len = pos
-    
+
     request_message['data'] = message[0:message_len]
-    request_message['len' ] = message_len    
+    request_message['len' ] = message_len
     return request_message
-    
-    
+
+
   def read_pp_send_parameter_message(self, propar_message):
     """Read parameter_objects from send parameter propar_message.
     Function returns a list of parameter_objects, with the sent data in the parameter_object['data'] field.
@@ -1351,7 +1362,7 @@ class _propar_builder(object):
 
             # Check string length
             if parameter['parm_size'] > slen:
-              read_status = PP_ERROR_PROTOCOL_ERROR              
+              read_status = PP_ERROR_PROTOCOL_ERROR
             elif parameter['parm_size'] > MAX_PP_PARM_LEN - 1:
               # Decode string and store data
               string_bytes = bytes(message[pos:pos+parameter['parm_size']])
@@ -1364,7 +1375,7 @@ class _propar_builder(object):
               except:
                 parameter['data'] = string_bytes
 
-            # Increase pos for messsage decoding    
+            # Increase pos for messsage decoding
             pos += data_size
 
       parameter['status'    ] = read_status
@@ -1373,7 +1384,7 @@ class _propar_builder(object):
       parameters.append(parameter)
     return parameters
 
-      
+
   def read_pp_request_parameter_message(self, propar_message):
     """Read parameter_objects from request parameter propar_message.
     Function returns a list of parameter_objects.
@@ -1458,8 +1469,8 @@ class _propar_builder(object):
       yield parameter
 
 
-      
-      
+
+
 class _propar_provider(object):
   """Implements the propar interface for master or slave"""
 
@@ -1483,12 +1494,12 @@ class _propar_provider(object):
       self.serial = serial_class(comport, baudrate, timeout=0.01, write_timeout=0)
     except:
       raise
- 
+
     # External flags / options
     self.debug = debug
     self.dump  = dump
-    self.mode  = mode    
-	
+    self.mode  = mode
+
 	# Additional features
     self.auto_reopen = True
     self.open_count  = 0
@@ -1617,7 +1628,7 @@ class _propar_provider(object):
         print("TX ({:3d}): {:}".format(len(msg), ' '.join(["{:02X}".format(x) for x in msg])))
 
       self.serial.write(bytes(msg))
-    
+
     else:
       # no sequence in ascii mode, but we need it to match in master
       # therefore, store it, and set it on receive (as we do request->response)
@@ -1628,7 +1639,7 @@ class _propar_provider(object):
       if self.debug:
         print("TX ({:3d}):".format(len(msg)), bytes(msg, encoding='ascii'))
       self.serial.write(bytes(msg, encoding='ascii'))
-    
+
 
   def read_propar_message(self):
     """ Reads a propar message from the receive queue.
@@ -1639,7 +1650,7 @@ class _propar_provider(object):
     except:
       return None
 
-      
+
   def __get_transmit_message(self):
     """ Reads a propar message from the transmit queue.
     Will return None when no messages are available.
@@ -1657,7 +1668,7 @@ class _propar_provider(object):
     """
     was_propar_byte = True
 
-    if self.mode == PP_MODE_BINARY:    
+    if self.mode == PP_MODE_BINARY:
 
       if self.RECEIVE_START_1 is self.__receive_state:
         self.__receive_buffer = []
@@ -1696,9 +1707,9 @@ class _propar_provider(object):
           self.__receive_state = self.RECEIVE_START_1
         else:
           self.__receive_state = self.RECEIVE_ERROR
-    
+
     else: # PP_MODE_ASCII
-      
+
       if self.RECEIVE_START_1 is self.__receive_state:
         if received_byte == 0x3A:
           self.__receive_state = self.RECEIVE_MESSAGE_DATA
@@ -1709,9 +1720,9 @@ class _propar_provider(object):
       elif self.RECEIVE_MESSAGE_DATA is self.__receive_state:
         if received_byte == 0x0D:
           self.__receive_state = self.RECEIVE_MESSAGE_DATA_OR_END
-        elif((received_byte >= 48 and received_byte <=  57) or 
+        elif((received_byte >= 48 and received_byte <=  57) or
              (received_byte >= 65 and received_byte <=  90) or
-             (received_byte >= 97 and received_byte <= 122)):    
+             (received_byte >= 97 and received_byte <= 122)):
           self.__receive_buffer.append(received_byte)
         else:
           self.__receive_state = self.RECEIVE_ERROR
@@ -1728,7 +1739,7 @@ class _propar_provider(object):
             try:
               data = msg[4:]
               for i in range(0, len(data), 2):
-                byte = int(data[i:i+2], 16) 
+                byte = int(data[i:i+2], 16)
                 propar_message['data'].append(byte)
             except:
               pass
@@ -1738,13 +1749,12 @@ class _propar_provider(object):
           self.__receive_state = self.RECEIVE_START_1
         else:
           self.__receive_state = self.RECEIVE_ERROR
-        
+
     if self.__receive_state == self.RECEIVE_ERROR:
       self.__receive_state = self.RECEIVE_START_1
       self.__receive_error_count += 1
       if self.debug:
-        print("Receive Error:", self.__receive_error_count, propar_message)        
+        print("Receive Error:", self.__receive_error_count, propar_message)
       was_propar_byte = False
 
     return was_propar_byte
-

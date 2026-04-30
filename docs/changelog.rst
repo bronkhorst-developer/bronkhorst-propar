@@ -2,10 +2,17 @@
 Changelog
 =========
 
+1.3.0
+-----
+
+-  Increase maximum string length.
+-  Fix maximum address for node scanning.
+-  Updated parameter database.
+
 1.2.0
 -----
 
--  Corrected string behavior. 
+-  Corrected string behavior.
 -  Updated parameter database.
 
 1.1.1

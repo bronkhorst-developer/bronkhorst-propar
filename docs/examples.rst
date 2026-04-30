@@ -21,7 +21,7 @@ Connecting to a single instrument
     # Measure and setpoint scaled to 0-32000 = 0-100%
     instrument.writeParameter(9, 16000)
     print(instrument.readParameter(8))
-    
+
     # Measure and setpoint as property (also 0-32000)
     instrument.setpoint = 0
     print(instrument.measure)
@@ -52,10 +52,10 @@ If no channel is specified the first channel will be used.
     p_upstream = instrument.readParameter(205, channel=2)
 
 Connecting to multiple instruments
----------------------------------- 
+----------------------------------
 
-When instruments are connected to a FLOW-BUS network, the localhost function an instrument can be 
-used to connect to other instruments on the network (by specifying the node address). 
+When instruments are connected to a FLOW-BUS network, the localhost function an instrument can be
+used to connect to other instruments on the network (by specifying the node address).
 
 .. code:: python
 
@@ -95,6 +95,9 @@ instruments are connected, or to get an overview of your network.
 The nodes list will also include the number of channels that are present
 on that device. Use this in combination with the channel functionality
 to create instances of each device and for the seperate device channels.
+
+Call ```get_nodes(find_first=False)``` to speedup scanning when instrument
+local host function is used.
 
 .. code:: python
 
